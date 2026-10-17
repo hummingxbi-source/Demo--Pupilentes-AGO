@@ -1,0 +1,77 @@
+// Ajustes y configuración general de Pupilentes AGO
+
+export const AJUSTES_INICIALES = {
+  nombreNegocio: "Pupilentes AGO",
+  slogan: "Tienda online CDMX · Lentes de contacto de color",
+  fundadora: "Araceli Garrido Ortiz",
+  telefonoWhatsApp: "525571113508",
+  instagram: "@pupilentes.ago.cdmx",
+  tiktok: "@pupilentes_ago",
+  mercadolibre: "Pupilentes AGO Oficial",
+
+  // Cuentas de banco para transferencia
+  cuentasPago: [
+    {
+      banco: "BBVA México",
+      tipo: "Transferencia SPEI (CLABE)",
+      numero: "012 180 01548291029 3",
+      titular: "Araceli Garrido Ortiz",
+      conceptoSugerido: "Tu nombre o Pedido AGO"
+    },
+    {
+      banco: "Mercado Pago",
+      tipo: "CVU / Transferencia directa",
+      numero: "0000003100098471625341",
+      titular: "Araceli Garrido",
+      conceptoSugerido: "Pupilentes AGO"
+    },
+    {
+      banco: "Banco Azteca",
+      tipo: "Depósito en OXXO o Banco Azteca",
+      numero: "127 180 00192837482 1",
+      titular: "Araceli Garrido Ortiz",
+      conceptoSugerido: "Pago pupilentes"
+    }
+  ],
+
+  // Entregas personales en Metro CDMX
+  entregasMetro: {
+    estacionesGratuitas: [
+      { id: "pantitlan", nombre: "Metro Pantitlán (Líneas 1, 5, 9, A)", costo: 0 },
+      { id: "tepalcates", nombre: "Metro Tepalcates (Línea A)", costo: 0 }
+    ],
+    costoOtraEstacion: 45.00,
+    diasEntrega: ["Lunes a Viernes de 15:00 a 19:00 hrs", "Sábados de 11:00 a 16:00 hrs"]
+  },
+
+  // Paqueterías simuladas (tarifas base aproximadas)
+  tarifasPaqueteria: {
+    cdmxLocal: { estandar: 95.00, express: 135.00 },
+    edomex: { estandar: 110.00, express: 145.00 },
+    nacional: { estandar: 140.00, express: 195.00 }
+  },
+
+  // Programa de lealtad: Puntos AGO
+  lealtad: {
+    pesosPorPunto: 10, // $10 gastados = 1 punto
+    niveles: [
+      { id: "bronce", nombre: "Bronce", minPuntos: 0, maxPuntos: 299, beneficio: "Acumula 1 punto por cada $10" },
+      { id: "plata", nombre: "Plata", minPuntos: 300, maxPuntos: 599, beneficio: "5% de descuento en todos los kits + estuche regalo" },
+      { id: "oro", nombre: "Oro VIP", minPuntos: 600, maxPuntos: 9999, beneficio: "10% permanente + Envíos gratis en CDMX" }
+    ],
+    catalogoCanjes: [
+      { id: "canje-estuche", puntos: 150, titulo: "Estuche Joyero con Espejo", valorPesos: 89 },
+      { id: "canje-solucion", puntos: 220, titulo: "Solución Multiusos 120 ml", valorPesos: 129 },
+      { id: "canje-descuento-100", puntos: 300, titulo: "Bono de $100 MXN en tu pedido", valorPesos: 100 },
+      { id: "canje-par-gratis", puntos: 900, titulo: "1 Par de Pupilentes a elección gratis", valorPesos: 649 }
+    ]
+  },
+
+  // Alertas de inventario
+  alertaStockMinimo: 3,
+
+  // Días para aviso de renovación de lentes
+  recordatorios: {
+    diasAnticipacion: [30, 15, 7, 3]
+  }
+};
