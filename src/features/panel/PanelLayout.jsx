@@ -62,8 +62,8 @@ export const PanelLayout = () => {
           {/* Logo Medallón Oficial */}
           <div className="p-6 border-b border-neutral-800 flex items-center justify-between">
             <Link to="/panel" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-amber-400/50 p-0.5 bg-neutral-900 shadow-[0_0_15px_rgba(201,162,75,0.25)]">
-                <img src="/logo-pupilentes-ago-512.png" alt="Pupilentes AGO" className="w-full h-full object-contain" />
+              <div style={{ width: '40px', height: '40px', minWidth: '40px' }} className="w-10 h-10 rounded-full border border-amber-400/50 p-0.5 bg-neutral-900 shadow-[0_0_15px_rgba(201,162,75,0.25)]">
+                <img src="/logo-pupilentes-ago-512.png" alt="Pupilentes AGO" className="logo-footer w-full h-full object-contain" />
               </div>
               <div>
                 <span className="font-serif text-lg font-bold text-amber-200 block leading-tight">

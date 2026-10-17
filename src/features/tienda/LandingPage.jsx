@@ -39,11 +39,11 @@ export const LandingPage = () => {
         <div className="container-custom relative z-10 flex flex-col items-center text-center">
           {/* Medallón del Logo Reveal */}
           <div className="relative mb-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-amber-400/50 p-1 bg-neutral-900 shadow-[0_0_35px_rgba(201,162,75,0.4)] animate-scale-in">
+            <div style={{ width: '100px', height: '100px' }} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-amber-400/50 p-1 bg-neutral-900 shadow-[0_0_35px_rgba(201,162,75,0.4)] animate-scale-in">
               <img
                 src="/logo-pupilentes-ago-512.png"
                 alt="Pupilentes AGO Medallón"
-                className="w-full h-full object-contain"
+                className="logo-hero w-full h-full object-contain"
               />
             </div>
             <div className="absolute -inset-2 rounded-full border border-amber-400/20 animate-ping opacity-25" />

@@ -16,8 +16,8 @@ export const Footer = () => {
           {/* Columna 1: Marca */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full border border-amber-400/40 p-0.5 bg-neutral-900">
-                <img src="/logo-pupilentes-ago-512.png" alt="Logo Pupilentes AGO" className="w-full h-full object-contain" />
+              <div style={{ width: '40px', height: '40px', minWidth: '40px' }} className="w-10 h-10 rounded-full border border-amber-400/40 p-0.5 bg-neutral-900">
+                <img src="/logo-pupilentes-ago-512.png" alt="Logo Pupilentes AGO" className="logo-footer w-full h-full object-contain" />
               </div>
               <div>
                 <span className="font-serif text-lg font-bold text-amber-200 block leading-tight">

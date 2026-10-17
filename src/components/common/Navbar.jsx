@@ -23,11 +23,11 @@ export const Navbar = () => {
       <div className="container-custom flex items-center justify-between h-20">
         {/* Logo oficial circular con medallón */}
         <Link to="/" className="flex items-center gap-3.5 group">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden border border-amber-400/40 p-0.5 bg-neutral-900 shadow-[0_0_15px_rgba(201,162,75,0.25)] group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(201,162,75,0.45)] transition-all">
+          <div style={{ width: '48px', height: '48px', minWidth: '48px' }} className="relative w-12 h-12 rounded-full overflow-hidden border border-amber-400/40 p-0.5 bg-neutral-900 shadow-[0_0_15px_rgba(201,162,75,0.25)] group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(201,162,75,0.45)] transition-all">
             <img
               src="/logo-pupilentes-ago-512.png"
               alt="Logo Pupilentes AGO"
-              className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-300"
+              className="logo-nav w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-300"
             />
           </div>
           <div>

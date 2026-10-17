@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Defensive image sizing */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.logo-nav {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  object-fit: contain;
+}
+
+.logo-hero {
+  width: 100px !important;
+  height: 100px !important;
+  max-width: 100px !important;
+  object-fit: contain;
+}
+
+.logo-footer {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  object-fit: contain;
+}
+
 /* Design System: "Elegante Boutique" - Pupilentes AGO */
 :root {
   /* Tokens de Color Primarios */
