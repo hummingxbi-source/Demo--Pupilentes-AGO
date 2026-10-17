@@ -14,7 +14,8 @@ import {
   Truck,
   Eye,
   CheckSquare,
-  Square
+  Square,
+  KanbanSquare
 } from 'lucide-react';
 
 export const PanelDashboard = () => {

@@ -22,7 +22,8 @@ import {
   Printer,
   ExternalLink,
   MessageCircle,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from 'lucide-react';
 
 export const CheckoutWizard = () => {
