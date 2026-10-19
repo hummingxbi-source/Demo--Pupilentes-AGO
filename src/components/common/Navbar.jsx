@@ -33,6 +33,12 @@ export const Navbar = () => {
     );
   }, []);
 
+  // Bloquear el scroll de fondo con el menú abierto
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
+
   // Scroll direction detection: hide on scroll down, show on scroll up
   useEffect(() => {
     const el = navRef.current;
@@ -149,15 +155,15 @@ export const Navbar = () => {
       <header
         ref={navRef}
         style={{ transition: 'background-color 300ms ease, color 300ms ease, border-color 300ms ease' }}
-        className={`fixed top-0 left-0 w-full z-40 gutter flex items-center justify-between h-[72px] ${
+        className={`fixed top-0 left-0 w-full z-40 gutter flex items-center justify-between h-[64px] lg:h-[72px] ${
           isScrolled
             ? isLightTheme
               ? 'bg-[#F5EFE4]/90 backdrop-blur-xl border-b border-[#5C5247]/20 shadow-sm'
               : 'bg-ink/75 backdrop-blur-xl border-b border-brass/15 shadow-sm'
             : isLightTheme
             ? 'bg-[#F5EFE4]/80 backdrop-blur-md border-b border-[#5C5247]/15'
-            : 'bg-transparent border-b border-transparent'
-        }`}
+            : 'bg-ink/80 backdrop-blur-xl border-b border-brass/10 lg:bg-transparent lg:backdrop-blur-none lg:border-transparent'
+        } ${mobileMenuOpen ? '!bg-ink !border-brass/15' : ''}`}
       >
         {/* Left: Medallón Logo (36px) & Wordmark */}
         <Link to="/" className="flex items-center gap-3 group focus-visible:outline-none" aria-label="Pupilentes AGO Inicio">
@@ -263,71 +269,49 @@ export const Navbar = () => {
         </div>
       </header>
 
-      {/* Fullscreen Mobile Overlay Menu */}
+      {/* Menú móvil a pantalla completa */}
       {mobileMenuOpen && (
         <div
           ref={mobileMenuRef}
-          className="fixed inset-0 z-30 bg-ink/98 flex flex-col justify-between px-8 pt-28 pb-12 lg:hidden"
+          className="fixed inset-0 z-30 bg-ink flex flex-col justify-between px-6 pt-[88px] pb-24 lg:hidden overflow-y-auto"
         >
-          <nav className="flex flex-col gap-6">
-            <div className="overflow-hidden">
-              <a
-                href="#colecciones"
-                onClick={handleColeccionesClick}
-                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
-              >
-                {COPY.nav.collections}
-              </a>
-            </div>
-
-            <div className="overflow-hidden">
-              <Link
-                to="/catalogo"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
-              >
-                {COPY.nav.catalog}
-              </Link>
-            </div>
-
-            <div className="overflow-hidden">
-              <Link
-                to="/probador"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
-              >
-                {COPY.nav.eyeLab}
-              </Link>
-            </div>
-
-            <div className="overflow-hidden">
-              <Link
-                to="/cuenta"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
-              >
-                {COPY.nav.points}
-              </Link>
-            </div>
-
-            <div className="overflow-hidden">
-              <Link
-                to="/checkout"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
-              >
-                {COPY.nav.cart} ({totalItemsEnCarrito})
-              </Link>
-            </div>
+          <div className="pointer-events-none absolute -right-24 top-24 w-72 h-72 rounded-full opacity-[0.07] bg-[url('/img/iris/miel.webp')] bg-cover" />
+          <nav className="relative flex flex-col" aria-label="Menú móvil">
+            {[
+              { label: COPY.nav.collections, onClick: handleColeccionesClick, href: '#colecciones' },
+              { label: COPY.nav.catalog, to: '/catalogo' },
+              { label: COPY.nav.eyeLab, to: '/probador' },
+              { label: COPY.nav.points, to: '/cuenta' },
+              { label: `${COPY.nav.cart}${totalItemsEnCarrito ? ` (${totalItemsEnCarrito})` : ''}`, to: '/checkout' },
+            ].map((item, idx) => {
+              const activo = item.to && location.pathname === item.to;
+              const cls = `mobile-nav-link-inner flex items-baseline gap-4 py-4 border-b border-cocoa/70 font-serif text-[clamp(1.9rem,8.5vw,2.6rem)] leading-none transition-colors ${activo ? 'text-gilt' : 'text-champagne hover:text-gilt'}`;
+              const num = <span className="font-sans text-[11px] tracking-[0.2em] text-brass w-6 shrink-0">{String(idx + 1).padStart(2, '0')}</span>;
+              return (
+                <div key={item.label} className="overflow-hidden">
+                  {item.to ? (
+                    <Link to={item.to} onClick={() => setMobileMenuOpen(false)} className={cls}>{num}{item.label}</Link>
+                  ) : (
+                    <a href={item.href} onClick={item.onClick} className={cls}>{num}{item.label}</a>
+                  )}
+                </div>
+              );
+            })}
           </nav>
 
-          <div className="border-t border-cocoa pt-6 flex flex-col gap-2">
-            <span className="text-[12px] uppercase tracking-[0.2em] text-stone">
-              {COPY.brand.city}
-            </span>
-            <span className="text-[14px] text-sand font-light">
-              WhatsApp directo: {COPY.brand.whatsapp}
-            </span>
+          <div className="relative pt-8 flex flex-col gap-4">
+            <a
+              href="https://wa.me/525571113508"
+              target="_blank"
+              rel="noreferrer"
+              className="btn-brass w-full"
+            >
+              Escribir por WhatsApp
+            </a>
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-stone">
+              <span>{COPY.brand.city}</span>
+              <span className="font-mono normal-case tracking-normal text-sand">{COPY.brand.whatsapp}</span>
+            </div>
           </div>
         </div>
       )}
