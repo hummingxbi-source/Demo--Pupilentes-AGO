@@ -2,8 +2,21 @@
 
 export const PREGUNTAS_QUIZ = [
   {
+    id: "colorOjos",
+    titulo: "¿Cuál es tu color natural de ojos?",
+    subtitulo: "Nuestros lentes tienen opacidad estudiada para cubrir o fusionarse con tu base",
+    tipo: "selector",
+    opciones: [
+      { id: "negro", label: "Casi Negro / Café Muy Oscuro", hex: "#1A0F07", desc: "El más común en México, requiere buena cobertura peripupilar" },
+      { id: "castano_oscuro", label: "Castaño Oscuro Profundo", hex: "#2E1A0C", desc: "Base rica que da calidez a tonos miel y verdes" },
+      { id: "castano_medio", label: "Castaño Medio Chocolate", hex: "#523218", desc: "Permite transiciones suaves y naturales" },
+      { id: "avellana", label: "Avellana con destellos verdes", hex: "#6F4E24", desc: "Los colores claros resaltan con facilidad" },
+      { id: "claro", label: "Verde o Azul Claro natural", hex: "#4C6B5C", desc: "Buscas intensificar o cambiar de tono" }
+    ]
+  },
+  {
     id: "tonoPiel",
-    titulo: "¿Cuál es tu tono de piel aproximado?",
+    titulo: "¿Con qué tono o matiz te identificas más?",
     subtitulo: "Para encontrar los matices que armonicen con tu calidez o frialdad natural",
     tipo: "colores",
     opciones: [
@@ -15,19 +28,6 @@ export const PREGUNTAS_QUIZ = [
       { id: "bronce", label: "Bronce Profundo", hex: "#9C6644", sub: "Cálido vibrante" },
       { id: "moreno", label: "Moreno Cálido", hex: "#7F4F24", sub: "Rico en pigmentos cálidos" },
       { id: "ebano", label: "Ébano Profundo", hex: "#582F0E", sub: "Intenso y luminoso" }
-    ]
-  },
-  {
-    id: "colorOjos",
-    titulo: "¿Cuál es tu color natural de ojos?",
-    subtitulo: "Nuestros lentes tienen opacidad estudiada para cubrir o fusionarse con tu base",
-    tipo: "selector",
-    opciones: [
-      { id: "negro", label: "Casi Negro / Café Muy Oscuro", hex: "#1A0F07", desc: "El más común en México, requiere buena cobertura peripupilar" },
-      { id: "castano_oscuro", label: "Castaño Oscuro Profundo", hex: "#2E1A0C", desc: "Base rica que da calidez a tonos miel y verdes" },
-      { id: "castano_medio", label: "Castaño Medio Chocolate", hex: "#523218", desc: "Permite transiciones suaves y naturales" },
-      { id: "avellana", label: "Avellana con destellos verdes", hex: "#6F4E24", desc: "Los colores claros resaltan con facilidad" },
-      { id: "claro", label: "Verde o Azul Claro natural", hex: "#4C6B5C", desc: "Buscas intensificar o cambiar de tono" }
     ]
   },
   {

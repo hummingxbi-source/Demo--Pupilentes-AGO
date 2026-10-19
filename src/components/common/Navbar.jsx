@@ -1,155 +1,338 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { ShoppingBag, Sparkles, User, ShieldCheck, Menu, X, ArrowUpRight } from 'lucide-react';
+import { useLenis } from '../../lib/smoothScroll';
+import { gsap, ScrollTrigger } from '../../lib/gsap';
+import { ShoppingBag, User } from 'lucide-react';
+import { COPY } from '../../data/copy';
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isLightTheme, setIsLightTheme] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+
+  const navRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { lenis, scrollToId } = useLenis();
+
   const carrito = useStore((state) => state.carrito);
   const clientaActual = useStore((state) => state.clientaActual);
-
+  const telefonoSesion = useStore((state) => state.telefono);
   const totalItemsEnCarrito = carrito.reduce((acc, item) => acc + (item.cantidad || 1), 0);
 
-  const navLinks = [
-    { label: "Catálogo", path: "/#catalogo" },
-    { label: "Eye Lab (Probador)", path: "/probador", badge: "WOW" },
-    { label: "Puntos AGO", path: "/cuenta" },
-    { label: "Rastreo", path: "/seguimiento/AGO-1062" },
-  ];
+  // Entrance animation
+  useEffect(() => {
+    if (!navRef.current) return;
+    gsap.fromTo(
+      navRef.current,
+      { yPercent: -100, opacity: 0 },
+      { yPercent: 0, opacity: 1, duration: 0.9, delay: 0.4, ease: 'power3.out' }
+    );
+  }, []);
+
+  // Scroll direction detection: hide on scroll down, show on scroll up
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    let lastScrollY = window.pageYOffset;
+
+    const onScroll = () => {
+      const currentScrollY = window.pageYOffset;
+      setIsScrolled(currentScrollY > 70);
+
+      if (mobileMenuOpen) return;
+
+      if (currentScrollY > 150 && currentScrollY > lastScrollY) {
+        gsap.to(el, { yPercent: -100, duration: 0.45, ease: 'power3.out', overwrite: 'auto' });
+      } else {
+        gsap.to(el, { yPercent: 0, duration: 0.45, ease: 'power3.out', overwrite: 'auto' });
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [mobileMenuOpen]);
+
+  // Section theme detection (light sections like manifiesto or catalog)
+  useEffect(() => {
+    const checkTheme = () => {
+      const sections = document.querySelectorAll('[data-nav-theme]');
+      const navCenter = 36;
+      let lightActive = false;
+      let activeId = '';
+
+      sections.forEach((sec) => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= navCenter && rect.bottom >= navCenter) {
+          if (sec.getAttribute('data-nav-theme') === 'light') {
+            lightActive = true;
+          }
+          if (sec.id) activeId = sec.id;
+        }
+      });
+
+      setIsLightTheme(lightActive);
+      setActiveSection(activeId);
+    };
+
+    window.addEventListener('scroll', checkTheme, { passive: true });
+    checkTheme();
+    return () => window.removeEventListener('scroll', checkTheme);
+  }, [location.pathname]);
+
+  // Mobile menu open / close animations & scroll locking
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      if (lenis) lenis.stop();
+      document.body.style.overflow = 'hidden';
+
+      const ctx = gsap.context(() => {
+        gsap.fromTo(
+          mobileMenuRef.current,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.35, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          '.mobile-nav-link-inner',
+          { yPercent: 100, opacity: 0 },
+          { yPercent: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: 'power3.out', delay: 0.1 }
+        );
+      }, mobileMenuRef);
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setMobileMenuOpen(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        ctx.revert();
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      if (lenis) lenis.start();
+      document.body.style.overflow = '';
+    }
+  }, [mobileMenuOpen, lenis]);
+
+  // Handler for Colecciones link
+  const handleColeccionesClick = (e) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    if (location.pathname === '/') {
+      scrollToId('colecciones');
+    } else {
+      navigate('/');
+      setTimeout(() => {
+        scrollToId('colecciones');
+      }, 350);
+    }
+  };
+
+  const isColeccionesActive = location.pathname === '/' && activeSection === 'colecciones';
+  const isCatalogoActive = location.pathname === '/catalogo';
+  const isEyeLabActive = location.pathname === '/probador';
+  const isCuentaActive = location.pathname === '/cuenta';
+
+  // Text colors depending on light/dark section
+  const textColor = isLightTheme ? 'text-[#1a1a1a]' : 'text-champagne';
+  const textMuted = isLightTheme ? 'text-[#5C5247]' : 'text-stone';
+  const logoBorder = isLightTheme ? 'border-[#5C5247]/30' : 'border-stone/20';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-neutral-950/85 backdrop-blur-md border-b border-amber-500/20 transition-all duration-300">
-      <div className="container-custom flex items-center justify-between h-20">
-        {/* Logo oficial circular con medallón */}
-        <Link to="/" className="flex items-center gap-3.5 group">
-          <div style={{ width: '48px', height: '48px', minWidth: '48px' }} className="relative w-12 h-12 rounded-full overflow-hidden border border-amber-400/40 p-0.5 bg-neutral-900 shadow-[0_0_15px_rgba(201,162,75,0.25)] group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(201,162,75,0.45)] transition-all">
+    <>
+      <header
+        ref={navRef}
+        style={{ transition: 'background-color 300ms ease, color 300ms ease, border-color 300ms ease' }}
+        className={`fixed top-0 left-0 w-full z-40 gutter flex items-center justify-between h-[72px] ${
+          isScrolled
+            ? isLightTheme
+              ? 'bg-[#F5EFE4]/90 backdrop-blur-xl border-b border-[#5C5247]/20 shadow-sm'
+              : 'bg-ink/75 backdrop-blur-xl border-b border-brass/15 shadow-sm'
+            : isLightTheme
+            ? 'bg-[#F5EFE4]/80 backdrop-blur-md border-b border-[#5C5247]/15'
+            : 'bg-transparent border-b border-transparent'
+        }`}
+      >
+        {/* Left: Medallón Logo (36px) & Wordmark */}
+        <Link to="/" className="flex items-center gap-3 group focus-visible:outline-none" aria-label="Pupilentes AGO Inicio">
+          <div className={`relative w-9 h-9 rounded-full overflow-hidden bg-espresso border ${logoBorder} transition-all duration-300 group-hover:scale-105`}>
             <img
               src="/logo-pupilentes-ago-512.png"
-              alt="Logo Pupilentes AGO"
-              className="logo-nav w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-300"
+              alt="Pupilentes AGO"
+              className="w-full h-full object-contain p-0.5"
             />
           </div>
-          <div>
-            <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-amber-200 block leading-tight">
-              PUPILENTES AGO
-            </span>
-            <span className="text-[10px] tracking-[0.2em] uppercase text-stone-400 font-sans block">
-              Tienda Online CDMX
-            </span>
-          </div>
+          <span className={`hidden sm:inline-block font-sans text-[12px] tracking-[0.28em] font-medium uppercase transition-colors group-hover:text-gilt ${textColor}`}>
+            {COPY.brand.name}
+          </span>
         </Link>
 
-        {/* Links de escritorio */}
-        <nav className="hidden md:flex items-center gap-7">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.path;
-            return (
-              <Link
-                key={link.label}
-                to={link.path}
-                className={`text-sm font-medium tracking-wide transition-colors relative py-1 flex items-center gap-1.5 ${
-                  isActive ? 'text-amber-300' : 'text-neutral-300 hover:text-amber-200'
-                }`}
-              >
-                {link.label}
-                {link.badge && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse">
-                    {link.badge}
-                  </span>
-                )}
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-amber-500 to-amber-300" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Acciones de la derecha: Puntos, Carrito y Mobile Toggle */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          {/* Badge de Puntos de la clienta */}
-          <Link
-            to="/cuenta"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:border-amber-400/60 transition-colors"
-            title="Ver mis Puntos AGO acumulados"
+        {/* Center: Desktop Links (>= 1024px) */}
+        <nav className="hidden lg:flex items-center gap-8 xl:gap-10" aria-label="Navegación principal">
+          <a
+            href="#colecciones"
+            onClick={handleColeccionesClick}
+            className={`btn-link-thread text-[13px] tracking-[0.14em] uppercase transition-colors ${
+              isColeccionesActive ? 'is-active text-gilt font-medium' : textColor
+            }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>{clientaActual.puntos} pts</span>
+            {COPY.nav.collections}
+          </a>
+
+          <Link
+            to="/catalogo"
+            className={`btn-link-thread text-[13px] tracking-[0.14em] uppercase transition-colors ${
+              isCatalogoActive ? 'is-active text-gilt font-medium' : textColor
+            }`}
+          >
+            {COPY.nav.catalog}
           </Link>
 
-          {/* Botón Carrito con contador interactivo */}
+          <Link
+            to="/probador"
+            className={`btn-link-thread text-[13px] tracking-[0.14em] uppercase transition-colors ${
+              isEyeLabActive ? 'is-active text-gilt font-medium' : textColor
+            }`}
+          >
+            {COPY.nav.eyeLab}
+          </Link>
+
+          <Link
+            to="/cuenta"
+            className={`btn-link-thread text-[13px] tracking-[0.14em] uppercase transition-colors ${
+              isCuentaActive ? 'is-active text-gilt font-medium' : textColor
+            }`}
+          >
+            {COPY.nav.points}
+          </Link>
+        </nav>
+
+        {/* Right: Cart & My Account */}
+        <div className="flex items-center gap-4 sm:gap-6">
+          {/* Indicador de sesión: solo aparece cuando la clienta ya entró con su WhatsApp */}
+          {telefonoSesion && (
+            <Link
+              to="/cuenta"
+              className={`hidden sm:flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-brass/30 text-[12px] transition-colors ${textColor} hover:border-brass`}
+              aria-label="Ver mis pedidos y puntos"
+            >
+              <span className="w-6 h-6 rounded-full bg-brass text-ink text-[10px] font-semibold flex items-center justify-center">
+                {(clientaActual?.nombre || 'AG').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+              </span>
+              <span className="font-mono">{clientaActual?.puntos || 0} pts</span>
+            </Link>
+          )}
+
           <Link
             to="/checkout"
-            className="relative p-2.5 rounded-full bg-neutral-900/90 border border-amber-500/30 text-neutral-200 hover:text-amber-300 hover:border-amber-400 transition-all"
-            aria-label="Ver carrito y finalizar compra"
+            className={`relative p-2 rounded-full transition-colors ${textColor} hover:text-gilt`}
+            aria-label={`Ver bolsa con ${totalItemsEnCarrito} artículos`}
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="w-5 h-5 stroke-[1.5]" />
             {totalItemsEnCarrito > 0 && (
-              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[11px] font-bold rounded-full bg-amber-400 text-neutral-950 shadow-[0_0_10px_rgba(201,162,75,0.7)] animate-scale-in">
+              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold rounded-full bg-brass text-ink">
                 {totalItemsEnCarrito}
               </span>
             )}
           </Link>
 
-          {/* Botón rápido a Panel */}
-          <Link
-            to="/panel"
-            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-stone-300 border border-neutral-700 hover:border-amber-400/50 hover:text-amber-300 transition-colors bg-neutral-900/40"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>Panel Araceli</span>
-          </Link>
-
-          {/* Botón Menú Móvil */}
+          {/* Mobile Menu Button: Minimal crossing lines */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-neutral-300 hover:text-amber-300"
-            aria-label="Abrir menú de navegación"
+            className="lg:hidden relative w-8 h-8 flex flex-col justify-center items-center gap-1.5 focus-visible:outline-none"
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <span
+              className={`w-5 h-[1.5px] bg-current transition-transform duration-300 ${
+                textColor
+              } ${mobileMenuOpen ? 'rotate-45 translate-y-[4.5px]' : ''}`}
+            />
+            <span
+              className={`w-5 h-[1.5px] bg-current transition-transform duration-300 ${
+                textColor
+              } ${mobileMenuOpen ? '-rotate-45 -translate-y-[4.5px]' : ''}`}
+            />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Menú Móvil Desplegable */}
+      {/* Fullscreen Mobile Overlay Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-neutral-950/98 border-b border-amber-500/30 px-6 py-6 animate-fade-in">
-          <nav className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-medium text-neutral-200 hover:text-amber-300 flex items-center justify-between py-2 border-b border-neutral-800"
+        <div
+          ref={mobileMenuRef}
+          className="fixed inset-0 z-30 bg-ink/98 flex flex-col justify-between px-8 pt-28 pb-12 lg:hidden"
+        >
+          <nav className="flex flex-col gap-6">
+            <div className="overflow-hidden">
+              <a
+                href="#colecciones"
+                onClick={handleColeccionesClick}
+                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
               >
-                <span>{link.label}</span>
-                {link.badge && (
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                    {link.badge}
-                  </span>
-                )}
+                {COPY.nav.collections}
+              </a>
+            </div>
+
+            <div className="overflow-hidden">
+              <Link
+                to="/catalogo"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
+              >
+                {COPY.nav.catalog}
               </Link>
-            ))}
-            <Link
-              to="/cuenta"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-medium text-amber-300 flex items-center justify-between py-2 border-b border-neutral-800"
-            >
-              <span>Mi Cuenta & Puntos AGO ({clientaActual.puntos} pts)</span>
-              <Sparkles className="w-4 h-4" />
-            </Link>
-            <Link
-              to="/panel"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-sm font-semibold text-neutral-400 hover:text-amber-300 flex items-center gap-2 pt-2"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Acceder al Panel de Operación</span>
-            </Link>
+            </div>
+
+            <div className="overflow-hidden">
+              <Link
+                to="/probador"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
+              >
+                {COPY.nav.eyeLab}
+              </Link>
+            </div>
+
+            <div className="overflow-hidden">
+              <Link
+                to="/cuenta"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
+              >
+                {COPY.nav.points}
+              </Link>
+            </div>
+
+            <div className="overflow-hidden">
+              <Link
+                to="/checkout"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mobile-nav-link-inner block font-serif text-[clamp(2.5rem,9vw,4rem)] text-champagne hover:text-gilt transition-colors"
+              >
+                {COPY.nav.cart} ({totalItemsEnCarrito})
+              </Link>
+            </div>
           </nav>
+
+          <div className="border-t border-cocoa pt-6 flex flex-col gap-2">
+            <span className="text-[12px] uppercase tracking-[0.2em] text-stone">
+              {COPY.brand.city}
+            </span>
+            <span className="text-[14px] text-sand font-light">
+              WhatsApp directo: {COPY.brand.whatsapp}
+            </span>
+          </div>
         </div>
       )}
-    </header>
+    </>
   );
 };
+
+export default Navbar;

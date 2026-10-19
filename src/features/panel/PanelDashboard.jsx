@@ -1,292 +1,255 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { formatMXN, calcularStockTotal } from '../../data/productos';
+import { formatMXN } from '../../data/productos';
+import { FLUJO_PEDIDO } from '../../lib/estados';
 import {
-  TrendingUp,
-  ShoppingBag,
-  DollarSign,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  CheckCircle2,
-  ArrowRight,
-  Truck,
-  Eye,
-  CheckSquare,
-  Square,
-  KanbanSquare
+  ventanas, ventasPorDia, porCanal, topModelos, conteoPorEstado, alertasStock, variacion,
+} from './metricas';
+import {
+  ReceiptText, PackageCheck, MapPin, Wallet, AlertTriangle, RotateCw, ArrowRight, ArrowUpRight,
+  ArrowDownRight, Plus, ExternalLink, Check, User, Zap,
 } from 'lucide-react';
 
-export const PanelDashboard = () => {
-  const pedidos = useStore((state) => state.pedidos);
-  const productos = useStore((state) => state.productos);
-  const clientas = useStore((state) => state.clientas);
-  const diasOffsetSimulados = useStore((state) => state.diasOffsetSimulados);
+const pct = (v) => `${Math.round(v * 100)}%`;
 
-  // KPIs
-  const totalVentas = pedidos
-    .filter((p) => p.estado !== 'cancelado')
-    .reduce((sum, p) => sum + (p.total || 0), 0);
+const Delta = ({ v }) => {
+  if (v == null) return <span className="text-[11px] text-stone">sin periodo previo</span>;
+  const up = v >= 0;
+  const Icon = up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[11px] ${up ? 'text-emerald-300' : 'text-rose-300'}`}>
+      <Icon className="w-3.5 h-3.5" />{Math.abs(Math.round(v * 100))}% vs 30 días previos
+    </span>
+  );
+};
 
-  const pedidosCompletados = pedidos.filter((p) => p.estado !== 'cancelado').length;
-  const ticketPromedio = pedidosCompletados > 0 ? totalVentas / pedidosCompletados : 0;
-  const pedidosPorVerificar = pedidos.filter((p) => p.estado === 'verificar_comprobante').length;
-
-  // Modelos con alguna graduación en stock 0
-  const modelosConStockCritico = productos.filter((prod) => {
-    return Object.values(prod.stockPorGraduacion || {}).some((v) => Number(v) <= 0);
-  }).length;
-
-  // Renovaciones próximas (< 15 días)
-  const renovacionesProximas = clientas.filter((c) => {
-    const dias = Math.max(0, c.proximaRenovacionDias - diasOffsetSimulados);
-    return dias <= 15;
-  }).length;
-
-  // Checklist "Acciones de Hoy"
-  const [checklist, setChecklist] = useState([
-    { id: 1, texto: "Verificar comprobante de transferencia de Valeria Morales (BBVA $867)", completado: false, link: "/panel/pedidos" },
-    { id: 2, texto: "Generar guía de envío Estafeta para Fernanda Castillo (Roma Norte)", completado: false, link: "/panel/pedidos" },
-    { id: 3, texto: "Reabastecer stock de graduación -3.25 en Miel Satín (0 piezas)", completado: false, link: "/panel/inventario" },
-    { id: 4, texto: `Enviar WhatsApp de renovación a ${renovacionesProximas} clientas con lentes por vencer`, completado: false, link: "/panel/mensajes" },
-    { id: 5, texto: "Entregar pedido en Metro Pantitlán a las 17:00 hrs", completado: true, link: "/panel/pedidos" }
-  ]);
-
-  const toggleCheck = (id) => {
-    setChecklist((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, completado: !item.completado } : item))
-    );
+// Tarjeta de pendiente: número grande + qué hacer + a dónde ir
+const Pendiente = ({ n, titulo, detalle, to, Icon, tono }) => {
+  const tonos = {
+    alto: 'border-l-amber-400 text-amber-300',
+    medio: 'border-l-brass text-gilt',
+    bajo: 'border-l-stone/40 text-stone',
   };
+  const t = n === 0 ? 'bajo' : tono;
+  return (
+    <Link to={to} className={`group rounded-2xl bg-espresso border border-cocoa border-l-4 ${tonos[t]} p-4 flex flex-col gap-3 hover:bg-cocoa/40 transition-colors`}>
+      <div className="flex items-center justify-between">
+        <Icon className="w-4 h-4" />
+        <ArrowRight className="w-3.5 h-3.5 text-stone group-hover:translate-x-0.5 transition-transform" />
+      </div>
+      <div>
+        <div className={`font-serif text-4xl font-light leading-none ${n === 0 ? 'text-stone' : 'text-champagne'}`}>{n}</div>
+        <div className="text-[13px] text-champagne mt-2 leading-tight">{titulo}</div>
+        <div className="text-[11px] text-stone mt-1 leading-snug">{n === 0 ? 'Todo al día' : detalle}</div>
+      </div>
+    </Link>
+  );
+};
 
-  // Top canales
-  const canalesData = [
-    { canal: "Instagram DM", porcentaje: 35, monto: totalVentas * 0.35, color: "#E1306C" },
-    { canal: "WhatsApp Directo", porcentaje: 28, monto: totalVentas * 0.28, color: "#25D366" },
-    { canal: "TikTok", porcentaje: 16, monto: totalVentas * 0.16, color: "#00F2FE" },
-    { canal: "Mercado Libre", porcentaje: 12, monto: totalVentas * 0.12, color: "#FFE600" },
-    { canal: "Tienda Online AGO (Nuevo)", porcentaje: 9, monto: totalVentas * 0.09, color: "#C9A24B" }
-  ];
+const Kpi = ({ label, valor, delta, nota }) => (
+  <div className="rounded-2xl bg-espresso border border-cocoa p-4 sm:p-5 space-y-1.5 min-w-0">
+    <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.18em] text-sand">{label}</span>
+    <div className="font-serif text-[26px] sm:text-3xl font-light text-champagne leading-tight">{valor}</div>
+    {nota ? <span className="text-[11px] text-stone">{nota}</span> : <Delta v={delta} />}
+  </div>
+);
+
+// Barras de ventas diarias con tooltip al pasar el cursor
+const GraficaDiaria = ({ serie }) => {
+  const [hover, setHover] = useState(null);
+  const max = Math.max(1, ...serie.map((d) => d.total));
+  const W = 600, H = 180, pad = 2, bw = W / serie.length;
+  const ticks = [0, max / 2, max];
+  return (
+    <div className="relative">
+      <svg viewBox={`0 0 ${W} ${H + 22}`} className="w-full h-auto" role="img" aria-label="Ventas por día, últimos 30 días">
+        {ticks.map((t, i) => (
+          <line key={i} x1="0" x2={W} y1={H - (t / max) * H} y2={H - (t / max) * H} stroke="#2A231D" strokeWidth="1" />
+        ))}
+        {serie.map((d, i) => {
+          const h = (d.total / max) * H;
+          return (
+            <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
+              <rect x={i * bw} y="0" width={bw} height={H} fill="transparent" />
+              {h > 0 && <rect x={i * bw + pad} y={H - h} width={bw - pad * 2} height={h} rx="3" fill={hover === i ? '#D9BE85' : '#B08D57'} />}
+            </g>
+          );
+        })}
+        {serie.map((d, i) => (i % 7 === 0 || (i === serie.length - 1 && i % 7 > 3)) && (
+          <text key={i} x={i * bw + bw / 2} y={H + 16} textAnchor="middle" fontSize="10" fill="#9A8F82">
+            {d.fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+          </text>
+        ))}
+      </svg>
+      {hover != null && (
+        <div className="absolute -top-2 pointer-events-none px-3 py-2 rounded-lg bg-ink border border-cocoa text-[11px] shadow-xl"
+          style={{ left: `${((hover + 0.5) / serie.length) * 100}%`, transform: 'translate(-50%,-100%)' }}>
+          <div className="text-stone">{serie[hover].fecha.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+          <div className="text-champagne font-medium">{formatMXN(serie[hover].total)}</div>
+          <div className="text-stone">{serie[hover].pedidos} pedido(s)</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const BarrasH = ({ filas, valor, etiqueta, formato }) => {
+  const max = Math.max(1, ...filas.map(valor));
+  return (
+    <div className="space-y-3">
+      {filas.map((f) => (
+        <div key={etiqueta(f)} className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-champagne">{etiqueta(f)}</span>
+            <span className="text-sand font-mono">{formato(f)}</span>
+          </div>
+          <div className="h-2 rounded-full bg-ink overflow-hidden">
+            <div className="h-full rounded-full bg-brass" style={{ width: `${(valor(f) / max) * 100}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Cómo la plataforma cubre cada paso del proceso que Araceli describió en el diagnóstico
+const PROCESO = [
+  { antes: 'Mandar catálogo y precios por mensaje', ahora: 'Catálogo con filtros y precios en la tienda', auto: true },
+  { antes: 'Revisar disponibilidad en Excel', ahora: 'La tienda solo ofrece graduaciones con stock, por ojo', auto: true },
+  { antes: 'Pedir CP y cotizar envío a mano', ahora: 'La clienta cotiza paquetería, DiDi o metro en el checkout', auto: true },
+  { antes: 'Escribir el total y enviar cuentas', ahora: 'Total y datos bancarios en el checkout y en su ticket', auto: true },
+  { antes: 'Corroborar el depósito en la banca', ahora: 'Lo validas tú con un clic desde "Por verificar"', auto: false },
+  { antes: 'Pedir datos para la guía', ahora: 'La clienta los captura al comprar; tú solo generas la guía', auto: false },
+  { antes: 'Monitorear hasta que llegue', ahora: 'La clienta ve el estatus en "Mis pedidos y puntos"', auto: true },
+];
+
+export const PanelDashboard = () => {
+  const pedidos = useStore((s) => s.pedidos);
+  const productos = useStore((s) => s.productos);
+  const clientas = useStore((s) => s.clientas);
+  const dias = useStore((s) => s.diasOffsetSimulados);
+
+  const m = useMemo(() => {
+    const v = ventanas(pedidos);
+    return {
+      v,
+      serie: ventasPorDia(pedidos),
+      canales: porCanal(v.pedidosVentana),
+      top: topModelos(v.pedidosVentana),
+      estados: conteoPorEstado(pedidos),
+      stock: alertasStock(productos),
+      renovar: clientas.filter((c) => c.proximaRenovacionDias != null && c.proximaRenovacionDias - dias <= 7).length,
+      entregasMetro: pedidos.filter((p) => p.estado === 'en_camino' && p.metodoEntrega === 'entrega_personal').length,
+    };
+  }, [pedidos, productos, clientas, dias]);
+
+  const e = m.estados;
+  const hoy = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+  const totalActivos = FLUJO_PEDIDO.slice(0, 5).reduce((s, f) => s + (e[f.id] || 0), 0);
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
-      {/* Cabecera del Dashboard */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-fade-in max-w-[1400px] mx-auto text-champagne">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <span className="text-xs uppercase font-mono tracking-widest text-amber-400 block mb-1">
-            Resumen Operativo
-          </span>
-          <h1 className="font-serif text-3xl font-bold text-amber-100">
-            Centro de Control · Pupilentes AGO
-          </h1>
-          <p className="text-xs text-stone-400">
-            Métricas reales de los últimos 60 días (~35 pedidos/mes en promedio).
+          <span className="text-[11px] uppercase tracking-[0.25em] text-sand block mb-1">{hoy.charAt(0).toUpperCase() + hoy.slice(1)}</span>
+          <h1 className="font-serif text-4xl font-light">Hola, Araceli</h1>
+          <p className="text-xs text-stone mt-1">
+            {totalActivos} pedidos en curso. Empieza por los recuadros dorados: son los que esperan una acción tuya.
           </p>
         </div>
-
-        <Link
-          to="/panel/pedidos"
-          className="btn-gold text-xs px-5 py-2.5 inline-flex items-center gap-2 self-start sm:self-auto"
-        >
-          <KanbanSquare className="w-4 h-4" />
-          <span>Ver Tablero Kanban de Pedidos</span>
-        </Link>
-      </div>
-
-      {/* TARJETAS DE KPIS PRINCIPALES */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* KPI 1: Ventas Totales */}
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-stone-400 uppercase">Ventas Facturadas</span>
-            <div className="p-2 rounded-xl bg-amber-400/10 text-amber-300">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <span className="text-2xl font-bold text-white font-sans block mb-1">
-            {formatMXN(totalVentas)}
-          </span>
-          <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>+18.4% vs mes anterior</span>
-          </span>
-        </div>
-
-        {/* KPI 2: Pedidos y Ticket */}
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-stone-400 uppercase">Pedidos / Ticket Prom.</span>
-            <div className="p-2 rounded-xl bg-blue-400/10 text-blue-300">
-              <ShoppingBag className="w-4 h-4" />
-            </div>
-          </div>
-          <span className="text-2xl font-bold text-white font-sans block mb-1">
-            {pedidosCompletados} pedidos
-          </span>
-          <span className="text-[11px] text-stone-400">
-            Ticket promedio: <strong className="text-amber-300 font-mono">{formatMXN(ticketPromedio)}</strong>
-          </span>
-        </div>
-
-        {/* KPI 3: Por Verificar Comprobante */}
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-amber-500/40 shadow-[0_0_15px_rgba(201,162,75,0.15)] relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-amber-300 uppercase">Por Validar Pago</span>
-            <div className="p-2 rounded-xl bg-amber-400/20 text-amber-300 animate-pulse">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-          </div>
-          <span className="text-2xl font-bold text-amber-200 font-sans block mb-1">
-            {pedidosPorVerificar} pendientes
-          </span>
-          <Link to="/panel/pedidos" className="text-[11px] text-amber-400 hover:underline flex items-center gap-1">
-            <span>Revisar transferencias en Kanban</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-
-        {/* KPI 4: Renovaciones Próximas */}
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800 shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-stone-400 uppercase">Renovaciones & Recompra</span>
-            <div className="p-2 rounded-xl bg-emerald-400/10 text-emerald-300">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <span className="text-2xl font-bold text-white font-sans block mb-1">
-            {renovacionesProximas} clientas
-          </span>
-          <Link to="/panel/mensajes" className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1">
-            <span>Enviar mensaje con 1 clic</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/panel/pedidos?nuevo=1" className="btn-brass text-xs px-4 py-2 whitespace-nowrap"><Plus className="w-3.5 h-3.5" /><span className="sm:hidden">Registrar venta</span><span className="hidden sm:inline">Venta de Instagram/WhatsApp</span></Link>
+          <Link to="/" className="px-4 py-2 rounded-full border border-cocoa text-xs text-stone hover:text-champagne flex items-center justify-center gap-1.5 whitespace-nowrap"><ExternalLink className="w-3.5 h-3.5" />Ver tienda</Link>
         </div>
       </div>
 
-      {/* CHECKLIST: ACCIONES DE HOY */}
-      <div className="p-6 rounded-3xl bg-neutral-900/90 border border-amber-500/30 shadow-xl space-y-4">
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-          <h3 className="font-serif text-xl font-bold text-amber-200 flex items-center gap-2">
-            <CheckSquare className="w-5 h-5 text-amber-400" />
-            Acciones Prioritarias de Hoy para Araceli
-          </h3>
-          <span className="text-xs text-stone-400">
-            {checklist.filter((c) => c.completado).length} de {checklist.length} completadas
-          </span>
+      {/* 1. Qué hacer hoy */}
+      <section className="space-y-3">
+        <h2 className="text-[11px] uppercase tracking-[0.2em] text-sand">Qué necesita tu atención</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          <Pendiente n={e.verificar_comprobante || 0} titulo="Comprobantes por verificar" detalle="Revisa tu banca y aprueba" to="/panel/pedidos?estado=verificar_comprobante" Icon={ReceiptText} tono="alto" />
+          <Pendiente n={e.por_enviar || 0} titulo="Por empacar y generar guía" detalle="Pago aprobado, listos para salir" to="/panel/pedidos?estado=por_enviar" Icon={PackageCheck} tono="alto" />
+          <Pendiente n={m.entregasMetro} titulo="Entregas en metro" detalle="Pantitlán, Tepalcates y otras" to="/panel/pedidos?estado=en_camino" Icon={MapPin} tono="medio" />
+          <Pendiente n={e.esperando_pago || 0} titulo="Esperando pago" detalle="Manda recordatorio por WhatsApp" to="/panel/pedidos?estado=esperando_pago" Icon={Wallet} tono="medio" />
+          <Pendiente n={m.stock.agotadas} titulo="Graduaciones agotadas" detalle={`${m.stock.porAgotarse} más con 2 piezas o menos`} to="/panel/inventario?vista=resurtir" Icon={AlertTriangle} tono="medio" />
+          <Pendiente n={m.renovar} titulo="Clientas por renovar" detalle="Vencen en 7 días o menos" to="/panel/clientas" Icon={RotateCw} tono="medio" />
         </div>
+      </section>
 
-        <div className="space-y-2.5">
-          {checklist.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => toggleCheck(item.id)}
-              className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                item.completado
-                  ? 'bg-neutral-950/60 border-neutral-800 text-stone-500 line-through'
-                  : 'bg-neutral-950 border-neutral-700/80 text-neutral-100 hover:border-amber-400/50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {item.completado ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                ) : (
-                  <Square className="w-4 h-4 text-stone-500 shrink-0" />
-                )}
-                <span className="text-xs font-medium">{item.texto}</span>
-              </div>
-
-              <Link
-                to={item.link}
-                onClick={(e) => e.stopPropagation()}
-                className="text-[11px] text-amber-400 hover:underline flex items-center gap-1 shrink-0 ml-4"
-              >
-                <span>Resolver</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
+      {/* 2. Cómo va el negocio */}
+      <section className="space-y-3">
+        <h2 className="text-[11px] uppercase tracking-[0.2em] text-sand">Últimos 30 días</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Kpi label="Ventas" valor={formatMXN(m.v.actual.ventas)} delta={variacion(m.v.actual.ventas, m.v.previa.ventas)} />
+          <Kpi label="Pedidos" valor={m.v.actual.pedidos} delta={variacion(m.v.actual.pedidos, m.v.previa.pedidos)} />
+          <Kpi label="Ticket promedio" valor={formatMXN(m.v.actual.ticket)} delta={variacion(m.v.actual.ticket, m.v.previa.ticket)} />
+          <Kpi label="Pedidos sin chat" valor={pct(m.v.actual.autoservicio)} nota="Compraron solas en la tienda online" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8 rounded-2xl bg-espresso border border-cocoa p-5 space-y-4">
+            <div className="flex justify-between items-baseline">
+              <h3 className="font-serif text-xl">Ventas por día</h3>
+              <span className="text-[11px] text-stone">Pasa el cursor sobre una barra</span>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* DOS COLUMNAS: VENTAS POR CANAL Y TOP MODELOS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Ventas por Canal */}
-        <div className="lg:col-span-7 p-6 rounded-3xl bg-neutral-900 border border-neutral-800 space-y-4">
-          <h3 className="font-serif text-lg font-bold text-amber-200">
-            Ventas por Canal de Captación (Los 5 Canales Declarados)
-          </h3>
-          <p className="text-xs text-stone-400">
-            Muestra el origen de los pedidos para saber dónde enfocar campañas de contenido.
-          </p>
-
-          <div className="space-y-3.5 pt-2">
-            {canalesData.map((canal) => (
-              <div key={canal.canal} className="space-y-1 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-neutral-200 flex items-center gap-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: canal.color }}
-                    />
-                    {canal.canal}
-                  </span>
-                  <div className="font-mono text-stone-300">
-                    <span className="font-bold text-white">{formatMXN(canal.monto)}</span> ({canal.porcentaje}%)
-                  </div>
-                </div>
-                <div className="w-full h-2 bg-neutral-950 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${canal.porcentaje}%`,
-                      backgroundColor: canal.color
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+            <GraficaDiaria serie={m.serie} />
+          </div>
+          <div className="lg:col-span-4 rounded-2xl bg-espresso border border-cocoa p-5 space-y-4">
+            <h3 className="font-serif text-xl">De dónde vienen</h3>
+            <BarrasH filas={m.canales} valor={(c) => c.total} etiqueta={(c) => c.nombre} formato={(c) => `${formatMXN(c.total)} · ${c.pedidos}`} />
           </div>
         </div>
+      </section>
 
-        {/* Top 5 Modelos Más Vendidos */}
-        <div className="lg:col-span-5 p-6 rounded-3xl bg-neutral-900 border border-neutral-800 space-y-4">
-          <h3 className="font-serif text-lg font-bold text-amber-200">
-            Top Modelos Estrella
-          </h3>
-          <p className="text-xs text-stone-400">
-            Modelos de mayor rotación y margen en el período.
-          </p>
-
-          <div className="divide-y divide-neutral-800 text-xs">
-            {productos.slice(0, 5).map((prod, index) => {
-              const stockTotal = calcularStockTotal(prod);
+      {/* 3. Flujo y productos */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-7 rounded-2xl bg-espresso border border-cocoa p-5 space-y-4">
+          <div className="flex justify-between items-baseline">
+            <h3 className="font-serif text-xl">Pedidos en curso por etapa</h3>
+            <Link to="/panel/pedidos" className="text-xs text-sand hover:text-gilt flex items-center gap-1">Abrir tablero <ArrowRight className="w-3.5 h-3.5" /></Link>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+            {FLUJO_PEDIDO.slice(0, 5).map((f, i) => {
+              const n = e[f.id] || 0;
               return (
-                <div key={prod.id} className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 h-5 rounded-full bg-neutral-800 text-stone-400 font-bold text-[10px] flex items-center justify-center font-mono">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <span className="font-bold text-neutral-100 block">{prod.nombre}</span>
-                      <span className="text-[10px] text-stone-500 uppercase font-mono">
-                        Familia {prod.familia} · {formatMXN(prod.precio)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`text-[11px] font-semibold font-mono ${
-                      stockTotal <= 5 ? 'text-amber-400' : 'text-emerald-400'
-                    }`}
-                  >
-                    {stockTotal} pzs en stock
-                  </span>
-                </div>
+                <Link key={f.id} to={`/panel/pedidos?estado=${f.id}`} className="relative rounded-xl bg-ink border border-cocoa hover:border-brass/60 px-1 py-3 sm:p-3 text-center transition-colors">
+                  <div className="text-[10px] font-mono text-stone">{i + 1}</div>
+                  <div className={`font-serif text-3xl font-light ${n ? 'text-champagne' : 'text-stone/60'}`}>{n}</div>
+                  <div className="text-[10px] sm:text-[11px] text-sand leading-tight mt-1">{f.corto}</div>
+                  {i < 4 && <ArrowRight className="hidden sm:block absolute -right-[11px] top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-cocoa z-10" />}
+                </Link>
               );
             })}
           </div>
         </div>
-      </div>
+        <div className="lg:col-span-5 rounded-2xl bg-espresso border border-cocoa p-5 space-y-4">
+          <h3 className="font-serif text-xl">Modelos más vendidos (30 días)</h3>
+          <BarrasH filas={m.top} valor={(t) => t.piezas} etiqueta={(t) => t.nombre} formato={(t) => `${t.piezas} pzas`} />
+        </div>
+      </section>
+
+      {/* 4. Cómo se resolvió su proceso */}
+      <section className="rounded-2xl bg-espresso border border-cocoa p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+          <h3 className="font-serif text-xl flex items-center gap-2"><Zap className="w-4 h-4 text-brass" />Tu proceso de venta, antes y ahora</h3>
+          <span className="text-[11px] text-stone">{PROCESO.filter((p) => p.auto).length} de {PROCESO.length} pasos ya no requieren mensajes</span>
+        </div>
+        <div className="divide-y divide-cocoa/70">
+          {PROCESO.map((p, i) => (
+            <div key={i} className="py-2.5 grid grid-cols-12 gap-3 items-center text-xs">
+              <span className="col-span-1 font-mono text-stone">{i + 1}</span>
+              <span className="col-span-11 sm:col-span-4 text-stone line-through decoration-stone/40">{p.antes}</span>
+              <span className="col-span-11 col-start-2 sm:col-start-auto sm:col-span-5 text-champagne">{p.ahora}</span>
+              <span className={`col-span-11 col-start-2 sm:col-start-auto sm:col-span-2 justify-self-start sm:justify-self-end px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider flex items-center gap-1 ${p.auto ? 'bg-brass/15 text-gilt border border-brass/30' : 'bg-ink text-sand border border-cocoa'}`}>
+                {p.auto ? <><Check className="w-3 h-3" />Automático</> : <><User className="w-3 h-3" />Un clic tuyo</>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
+
+export default PanelDashboard;

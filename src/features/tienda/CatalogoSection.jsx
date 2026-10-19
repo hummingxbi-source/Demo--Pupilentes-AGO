@@ -101,7 +101,7 @@ export const CatalogoSection = () => {
                   onClick={() => setBusqueda('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-white"
                 >
-                  ✕
+                  
                 </button>
               )}
             </div>
@@ -148,7 +148,7 @@ export const CatalogoSection = () => {
                 }`}
                 title="Mostrar solo modelos con stock disponible"
               >
-                {soloDisponibles ? '✓ En stock' : 'Todos'}
+                {soloDisponibles ? ' En stock' : 'Todos'}
               </button>
             </div>
           </div>

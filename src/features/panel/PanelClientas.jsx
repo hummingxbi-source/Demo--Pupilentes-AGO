@@ -116,7 +116,7 @@ export const PanelClientas = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full min-w-[720px] text-xs text-left">
             <thead className="bg-neutral-950 text-stone-400 font-mono uppercase text-[10px] border-b border-neutral-800">
               <tr>
                 <th className="py-3 px-4">Clienta</th>
@@ -231,3 +231,4 @@ export const PanelClientas = () => {
     </div>
   );
 };
+

@@ -76,32 +76,30 @@ export const InteractiveQuiz = ({ onSelectWinnerForTester }) => {
         </div>
 
         {/* Tarjeta del Ganador Principal */}
-        <div className="p-8 rounded-3xl bg-neutral-900 border border-amber-400/50 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(201,162,75,0.25)] flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="p-8 rounded-[24px] bg-espresso border border-cocoa shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
             <div className="relative">
               <IrisRenderer
-                colorPrincipal={ganador.producto.hexPrincipal}
-                colorSecundario={ganador.producto.hexSecundario}
-                colorAcento={ganador.producto.hexAcento}
+                producto={ganador.producto}
                 size={160}
                 hoverDilate={true}
               />
-              <span className="absolute -bottom-2 -right-2 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-400 text-neutral-950 shadow-md">
+              <span className="absolute -bottom-2 -right-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-brass text-ink shadow-md">
                 {ganador.matchPercent}% Match
               </span>
             </div>
 
             <div>
-              <span className="text-xs uppercase font-mono tracking-widest text-amber-400 block mb-1">
+              <span className="text-xs uppercase font-mono tracking-widest text-sand block mb-1">
                 #1 Elección Recomendada
               </span>
-              <h3 className="font-serif text-2xl font-bold text-white mb-1">
+              <h3 className="font-serif text-3xl font-light text-champagne mb-1">
                 {ganador.producto.nombre}
               </h3>
-              <p className="text-xs text-stone-400 mb-3">
+              <p className="text-xs text-stone mb-3">
                 Familia {ganador.producto.familia} · {ganador.producto.duracion}
               </p>
-              <span className="text-xl font-bold text-amber-300 font-sans">
+              <span className="text-2xl font-serif text-champagne">
                 {formatMXN(ganador.producto.precio)}
               </span>
             </div>
@@ -111,19 +109,19 @@ export const InteractiveQuiz = ({ onSelectWinnerForTester }) => {
             <button
               type="button"
               onClick={() => onSelectWinnerForTester(ganador.producto)}
-              className="btn-gold text-xs px-6 py-3 flex items-center justify-center gap-2"
+              className="btn-brass text-xs px-6 py-3 flex items-center justify-center gap-2"
             >
               <Camera className="w-4 h-4" />
-              <span>Probármelo en Vivo Ahora</span>
+              <span>Probármelo en vivo</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleAgregarAlCarrito(ganador.producto)}
-              className="btn-outline-gold text-xs px-6 py-3 flex items-center justify-center gap-2"
+              className="btn-link-thread text-xs px-6 py-2.5 flex items-center justify-center gap-2"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>Agregar al Carrito</span>
+              <span>Agregar a mi bolsa</span>
             </button>
           </div>
         </div>
@@ -303,7 +301,7 @@ export const InteractiveQuiz = ({ onSelectWinnerForTester }) => {
               const top3 = calcularRecomendacion(respuestas, productos);
               setResultados(top3);
             }}
-            className="btn-gold text-xs px-8 py-3.5 inline-flex items-center gap-2 mt-4"
+            className="btn-brass text-xs px-8 py-3.5 inline-flex items-center gap-2 mt-4"
           >
             <span>Ver Mi Recomendación</span>
             <Sparkles className="w-4 h-4" />

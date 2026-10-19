@@ -1,4 +1,5 @@
 // Ajustes y configuración general de Pupilentes AGO
+// Versión 3.0: Incorpora las 5 preguntas abiertas del negocio como parámetros configurables
 
 export const AJUSTES_INICIALES = {
   nombreNegocio: "Pupilentes AGO",
@@ -8,6 +9,24 @@ export const AJUSTES_INICIALES = {
   instagram: "@pupilentes.ago.cdmx",
   tiktok: "@pupilentes_ago",
   mercadolibre: "Pupilentes AGO Oficial",
+
+  // -------------------------------------------------------------
+  // PREGUNTAS ABIERTAS DEL NEGOCIO (Configurables sin suposiciones)
+  // -------------------------------------------------------------
+  // 1. ¿Graduación en pasos de 0.25 o 0.50?
+  pasoGraduacion: 0.25, // 0.25 | 0.50
+
+  // 2. ¿Los graduados son de color, transparentes o ambos?
+  tipoGraduadosDisponibles: "color", // 'color' | 'transparentes' | 'ambos'
+
+  // 3. ¿Estéticos y fantasía también existen graduados?
+  permitirGraduacionEsteticosFantasia: false, // true | false
+
+  // 4. ¿Costo de entrega en Pantitlán / Tepalcates?
+  costoEntregaPantitlanTepalcates: 0.00, // 0.00 = Gratis | número en MXN
+
+  // 5. ¿Cuáles fotos de Instagram son propias y cuáles de proveedores?
+  origenFotosCatalogo: "mixto", // 'propias' | 'proveedores' | 'mixto'
 
   // Cuentas de banco para transferencia
   cuentasPago: [
@@ -32,6 +51,13 @@ export const AJUSTES_INICIALES = {
       titular: "Araceli Garrido Ortiz",
       conceptoSugerido: "Pago pupilentes"
     }
+  ],
+
+  // Horarios de entrega configurables por método
+  horariosEntrega: [
+    { id: 'metro', label: 'Metro Pantitlán / Tepalcates', horarios: ['10:00–14:00', '15:00–19:00'] },
+    { id: 'didi', label: 'DiDi Express', horarios: ['Cualquier hora con 2h de aviso'] },
+    { id: 'paqueteria', label: 'Paquetería', horarios: ['Lunes a viernes, recolección antes de 13:00'] }
   ],
 
   // Entregas personales en Metro CDMX
@@ -75,3 +101,5 @@ export const AJUSTES_INICIALES = {
     diasAnticipacion: [30, 15, 7, 3]
   }
 };
+
+export default AJUSTES_INICIALES;

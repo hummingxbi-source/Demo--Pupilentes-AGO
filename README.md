@@ -1,31 +1,78 @@
 # Pupilentes AGO · Tienda Online CDMX 👁️✨
 
-> **Plataforma Digital de E-commerce & Centro de Control Operativo Boutique**
-> Desarrollado para **Araceli Garrido Ortiz** (Fundadora de Pupilentes AGO).
+> **Plataforma Digital de E-commerce & Centro de Control Operativo Boutique**  
+> Desarrollado para **Araceli Garrido Ortiz** (Fundadora de Pupilentes AGO).  
+> **Versión 2.0:** Rediseño *"Quiet Luxury"* con scroll cinemático GSAP, animaciones a sangre (100vw), probador en vivo real con MediaPipe Face Landmarker y división de código optimizada.
 
 ---
 
-## 🌟 Visión del Proyecto
+## 🌟 Visión del Proyecto y Novedades V2
 
-Pupilentes AGO es una boutique especializada en lentes de contacto de color de alta gama con graduación personalizada por ojo en la Ciudad de México. Esta plataforma digital elimina por completo los procesos manuales por mensajes de WhatsApp e Instagram, unificando en una sola aplicación interactiva:
+Pupilentes AGO es una boutique especializada en lentes de contacto de color de alta gama con graduación personalizada por ojo en la Ciudad de México. Esta versión 2.0 eleva la experiencia visual y operativa eliminando la saturación artificial y adoptando un diseño editorial de lujo:
 
-1. **La Tienda Online de la Clienta:** Catálogo interactivo con iris procedimentales, graduación mixta independiente por ojo (OD/OI), cotización automática de entregas (Metro CDMX gratis, DiDi y paqueterías) y checkout sin fricciones.
-2. **Eye Lab (Laboratorio Óptico Virtual):** Probador en vivo con cámara y superposición de lentes, comparador antes/después, captura de foto con marco dorado para redes sociales y cuestionario recomendador de 5 pasos con cálculo de afinidad.
-3. **Programa de Lealtad & Renovación:** Tarjeta de membresía holográfica 3D con Puntos AGO, canjes inmediatos y cuenta regresiva de reemplazo con recompra en 1 clic.
-4. **Panel Operativo de Araceli:** Dashboard con métricas de ventas por canal (Instagram, WhatsApp, TikTok, Mercado Libre), matriz de inventario estilo Excel con heatmap editable y soporte para exportar/importar XLSX, tablero Kanban de pedidos con verificación de comprobantes y biblioteca de mensajes automatizados.
-5. **Sincronización en Vivo:** Todo cambio en la tienda (compras, canjes) impacta al instante en el inventario y tablero del panel administrativo gracias a un store reactivo compartido.
+1. **Diseño "Quiet Luxury" a Pantalla Completa (100vw):**
+   - Sin bandas laterales ni marcos artificiales. Secciones con ritmo de alternancia cromática entre oscuros cálidos (`ink`, `espresso`) y claros luminosos (`ivory`, `bone`).
+   - Acento dorado sobrio (`brass` / `gilt`) reservado exclusivamente para detalles finos e interacciones de alto valor.
+   - Tipografía de alta costura: *Cormorant Garamond* ligera para titulares de gran escala y *Plus Jakarta Sans* para legibilidad óptima.
+2. **Scroll Cinemático Natural (GSAP + Lenis):**
+   - Integración nativa de `Lenis` y `ScrollTrigger` con ticker sincronizado a 60 fps y soporte de `prefers-reduced-motion`.
+   - **Hero Pinned Scrub:** Crossfade entre familias de color de iris, revelado tipográfico palabra por palabra y **zoom inmersivo a la pupila** que abre un portal circular hacia la colección.
+   - **Galería Horizontal Pinned:** Desplazamiento panorámico suave con paneles de 8 familias de iris y entintado dinámico de fondo.
+3. **Probador Virtual en Vivo Real (MediaPipe Face Landmarker):**
+   - Detección biométrica local en tiempo real de 478 puntos faciales y 10 puntos de iris.
+   - Recorte anatómico perfecto con el polígono de los párpados para que el lente se oculte naturalmente al parpadear.
+   - Fusión fotorrealista con recorte de pupila real (`destination-out`), brillo especular corneal y suavizado anti-temblor EMA.
+   - **Tres niveles de fallback en cascada:** Cámara en vivo → Foto subida por la clienta → Modo ilustración interactiva.
+4. **Tarjeta de Membresía 3D Satinada Sin Jitter:**
+   - Rediseño físico satinado de la tarjeta *AGO Privilège*. Separación arquitectónica del wrapper estático de eventos y el contenedor 3D con `gsap.quickTo` para rotación suave y reflejo `radial-gradient` en rAF sin parpadeos ni re-renders continuos.
+5. **Configurador Óptico OD/OI & Checkout Boutique:**
+   - Selección independiente de graduación por ojo (`0.00` a `-8.00`) con validación de inventario en tiempo real.
+   - Tres métodos de entrega reales de CDMX: entrega personal gratis en Metro Pantitlán/Tepalcates, envío express en DiDi y paqueterías nacionales.
+   - Generación de pedido formal formateado para WhatsApp y comprobante bancario.
+6. **Centro de Mando Operativo de Araceli:**
+   - Panel administrativo suavizado con paleta Quiet Luxury, 4 KPIs clave, gráfica de ventas por canal, matriz de existencias estilo Excel con importación/exportación a `.xlsx` mediante SheetJS y tablero Kanban de pedidos.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-- **Framework:** React 18 + Vite (SPA ligera y veloz)
-- **Enrutamiento:** React Router con `HashRouter` (permite ejecución estática en Netlify, Vercel o GitHub Pages sin configuración de servidor)
+- **Framework:** React 18 + Vite (SPA de alto rendimiento)
+- **Animaciones & Scroll:** GSAP 3 (`ScrollTrigger`, `useGSAP`) + Lenis Smooth Scroll
+- **Visión por Computadora & IA:** Google MediaPipe Face Landmarker (`@mediapipe/tasks-vision` local float16)
+- **Enrutamiento:** React Router (`HashRouter`) con división de código por rutas (`React.lazy` + `Suspense`)
 - **Estado Global:** Zustand con persistencia en `localStorage` y sincronización multi-pestaña
-- **Diseño & Estilos:** Sistema propio *"Elegante Boutique"* (paleta Carbón profundo, Oro metálico de joyería, tipografías *Cormorant Garamond* y *Plus Jakarta Sans*)
-- **Renderizado de Pupilentes:** Generador procedimental en SVG/Canvas con anillo limbal, fibras estromales radiales, dilatación de pupila al hover y reflejos especulares de luz
-- **Manejo de Archivos Excel:** SheetJS (`xlsx`) para importar y exportar existencias con un clic
-- **Micro-interacciones:** Lucide React, Canvas Confetti y transiciones fluidas a 60 fps
+- **Estilos:** Tailwind CSS 3 con paleta personalizada Quiet Luxury (`ink`, `espresso`, `cocoa`, `taupe`, `stone`, `sand`, `champagne`, `ivory`, `bone`, `brass`, `bronze`, `gilt`)
+- **Hojas de Cálculo:** SheetJS (`xlsx`) para exportación/importación inmediata de inventario
+
+---
+
+## 📦 Assets y Preparación de MediaPipe
+
+Para garantizar que el probador en vivo funcione de forma 100% autónoma y privada sin depender de conexiones externas o CDNs, los binarios y modelos residen en `public/`:
+
+```
+public/
+├── mediapipe/
+│   └── wasm/                 # Binarios WebAssembly de @mediapipe/tasks-vision
+├── models/
+│   └── face_landmarker.task  # Red neuronal oficial MediaPipe Face Landmarker (3.6 MB)
+├── img/
+│   ├── iris/                 # 8 imágenes de iris macro (1400×1400 WebP)
+│   ├── iris-tex/             # 8 texturas RGBA con pupila transparente para el probador (640×640 WebP)
+│   └── fotos/                # Slots de reemplazo de fotografía de alta resolución (ver LEEME.md)
+```
+
+Si se clona en un nuevo entorno y se requiere reinstalar los binarios de MediaPipe:
+```bash
+# Copiar wasm desde node_modules
+mkdir -p public/mediapipe/wasm
+cp -r node_modules/@mediapipe/tasks-vision/wasm public/mediapipe/
+
+# Descargar modelo oficial de MediaPipe
+mkdir -p public/models
+curl -L -o public/models/face_landmarker.task \
+  https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+```
 
 ---
 
@@ -48,102 +95,79 @@ npm run dev
 Abre tu navegador en:
 👉 `http://localhost:5173/#/`
 
-### Generar Bundle de Producción
+### Generar Bundle de Producción Optimizado
 
 ```bash
 npm run build
 ```
-La carpeta generada `dist/` está lista para desplegarse en cualquier hosting estático (GitHub Pages, Vercel, Netlify) sin dependencias de backend.
+Gracias a la configuración de `manualChunks` y `React.lazy`, el bundle de la landing inicial pesa **< 87 kB** (~25 kB gzip), cargando `@mediapipe`, `xlsx` y el panel administrativo únicamente cuando el usuario navega a sus respectivas rutas.
+
+### Procesamiento de Imágenes Fotográficas
+Para optimizar automáticamente las fotos soltadas en `public/img/originales/`:
+```bash
+npm run fotos
+```
+Genera versiones optimizadas `-800.webp` y `-1600.webp` en `public/img/fotos/` mediante `sharp`.
+
+---
+
+## 🖼️ Sistema de Slots Fotográficos (`Foto.jsx`)
+
+Para reemplazar los visuales por fotografías reales de clientas, producto o empaque sin tocar código, se cuenta con el componente `<Foto slot="identificador" />`:
+1. Consulta la estructura en [`BRIEF_IMAGENES_PUPILENTES_AGO.md`](file:///Users/emmanuel/Desktop/HummingX%20BI/Demo%20Pupilentes%20AGO/BRIEF_IMAGENES_PUPILENTES_AGO.md) y [`CREDITOS-IMAGENES.md`](file:///Users/emmanuel/Desktop/HummingX%20BI/Demo%20Pupilentes%20AGO/CREDITOS-IMAGENES.md).
+2. Coloca los archivos en formato WebP, JPG o PNG con el nombre del slot (ej. `macro/miel-01.webp`, `modelos/modelo-01.webp`, `producto/sku.webp`).
+3. Si el archivo no existe, el componente renderiza automáticamente su arte de respaldo en alta definición con iris macro o texturas de la paleta.
+4. Soporta almacenamiento de imágenes creadas o subidas desde el panel en **IndexedDB (`idb-keyval`)**, sin saturar el límite de 5 MB de `localStorage`.
 
 ---
 
 ## 🔄 Cómo Resetear los Datos Demo a Fábrica
 
-Para reiniciar todas las ventas, restablecer los stocks originales y limpiar las compras de prueba realizadas durante una presentación:
-
-1. **Desde el selector flotante:** En la esquina inferior derecha encontrarás el widget *"Ver como: Clienta · Dueña (Araceli)"*. Haz clic en el botón circular de reinicio (🔄).
-2. **Desde el Panel de Ajustes:** Ve a `/#/panel/ajustes` y haz clic en *"Resetear Toda la Demo"*.
+Para reiniciar compras de prueba, pedidos en el Kanban y existencias antes de una reunión:
+1. **Desde el widget flotante inferior derecho:** Haz clic en el botón circular de reinicio (🔄).
+2. **Desde el Panel de Ajustes:** Ve a `/#/panel/ajustes` y selecciona *"Resetear Toda la Demo"*.
 
 ---
 
-## ⏱️ Guion de Demostración de Cierre de Venta (~5 Minutos)
+## ⏱️ Guion de Demostración de Cierre de Venta V2 (~5 Minutos)
 
-Sigue este recorrido paso a paso para presentar la solución a Araceli:
+Sigue este recorrido paso a paso para cautivar a Araceli:
 
-### 1. El Impacto Visual & La Tienda Móvil (1:00 min)
+### 1. El Impacto Visual & Scroll Cinemático (1:15 min)
 - **Ruta:** `/#/`
-- Muestra el **Hero con el medallón de Pupilentes AGO** y el ojo interactivo que cambia suavemente de color mientras el título rota (*"Mira el mundo en miel... en verde... en platino"*).
-- Explica cómo este look editorial de lujo posiciona su marca por encima de cualquier competidor.
-- Haz scroll hacia el **Catálogo interactivo**: filtra por la familia *"Miel & Dorado"* o *"Verdes"*, muestra cómo los iris reaccionan con dilatación de pupila y resalta los badges de stock en tiempo real.
+- Muestra el **Hero con el iris gigante**: haz scroll suave hacia abajo y observa cómo el iris cambia suavemente de tono (miel → verde → azul → gris → violeta) coordinado con el título.
+- Continúa el scroll para ver el **zoom inmersivo a la pupila**, atravesando el ojo hasta entrar al portal circular de color marfil (*ivory*).
+- Deslízate por el **Manifiesto editorial** con revelado palabra por palabra.
+- Disfruta de la **Galería Horizontal de Colecciones** pineada con los 8 tonos de iris a sangre.
 
-### 2. El Eye Lab: Probador en Vivo & Recomendador (1:30 min)
+### 2. El Eye Lab: Probador Real con MediaPipe (1:30 min)
 - **Ruta:** `/#/probador`
-- Pestaña **A) Probador en vivo:** Activa la cámara o muestra el modo ilustración interactivo. Cambia de modelo en el carrusel inferior para ver la transición fluida.
-- Mueve el slider de **Intensidad** y **Apertura de pupila**.
-- Presiona el botón de **Cámara**: muestra la foto capturada con el marco dorado boutique y la marca de agua lista para compartir en Instagram.
-- Pestaña **B) Recomendador:** Completa las 5 preguntas visuales (tono de piel, ojos oscuros, ocasión de uso) y muestra el resultado con el porcentaje de match y la justificación editorial.
+- **Pestaña A — Probador en Vivo:**
+  - Activa la cámara o haz clic en *"Subir Foto"* para seleccionar cualquier rostro.
+  - Muestra cómo el modelo detecta el iris en milisegundos, recorta el lente exactamente dentro de los párpados y deja la pupila natural visible con reflejos de luz.
+  - Desliza el carrusel inferior para cambiar de color con crossfade suave.
+  - Usa el botón **"Comparar"** para arrastrar la línea divisoria antes/después.
+  - Haz clic en **"Tomar Foto"**: muestra la captura resultante con marco boutique y logo lista para descargar o compartir.
+- **Pestaña B — Recomendador:**
+  - Responde el cuestionario de 5 preguntas rápidas para ver la afinidad de color con justificación de estilismo.
 
-### 3. El Configurador & Checkout Sistematizado (1:00 min)
+### 3. Catálogo, Graduación OD/OI & Checkout (1:00 min)
 - **Ruta:** `/#/producto/miel-satin`
-- Resuelve su dolor número uno: **Graduación independiente por ojo (OD/OI)**.
-- Desmarca *"Misma graduación en ambos ojos"* y selecciona OD `-1.50` y OI `-1.75`. Destaca cómo el sistema valida el stock en tiempo real y evita tener que confirmar pieza por pieza por WhatsApp.
-- Añade el estuche joyero y haz clic en *"Agregar al Carrito"*.
-- En el checkout (Paso 2): muestra las tres opciones de entrega reales:
-  - **Metro CDMX:** Pantitlán o Tepalcates sin costo ($0) o estación con costo extra.
-  - **DiDi:** con aviso de pago previo.
-  - **Paquetería:** cotizador simulado por Código Postal.
-- Paso 4 y 5: muestra las cuentas bancarias con botón de copiar CLABE, sube el comprobante y genera la orden con el botón directo de **"Enviar mi Pedido por WhatsApp"**.
+- Destaca la fotografía macro del iris a pantalla dividida (sticky).
+- Desmarca *"Misma graduación en ambos ojos"* y elige graduaciones mixtas (ej. OD `-1.50`, OI `-2.25`). Resalta cómo el sistema avisa existencias al instante.
+- Pasa al **Checkout** (5 pasos limpios): muestra la entrega gratis en Metro Pantitlán/Tepalcates, la opción de DiDi y las paqueterías nacionales.
+- Completa el pedido con comprobante y presiona *"Enviar Pedido por WhatsApp"*.
 
-### 4. El Cerebro del Negocio: Panel de Araceli (1:00 min)
-- Cambia a **"Dueña (Araceli)"** en el selector flotante inferior (`/#/panel`).
-- Muestra el **Dashboard**: el pedido recién creado ya aparece reflejado y el inventario bajó automáticamente.
-- Revisa la gráfica de ventas por canal (Instagram, WhatsApp, TikTok, Mercado Libre).
-- Entra a **Pedidos (Kanban)**: abre el pedido recién hecho, valida el comprobante con un clic y presiona *"Generar Guía de Paquetería"*.
-- Regresa a la tienda en otra pestaña a `/#/seguimiento/AGO-XXXX` para mostrarle cómo la clienta ve su tracking actualizado en tiempo real.
+### 4. Tarjeta de Membresía Holográfica Satinada (0:30 min)
+- **Ruta:** `/#/cuenta`
+- Pasa el cursor por las esquinas y bordes de la tarjeta **AGO Privilège**: demuestra el movimiento 3D suave a 60 fps con brillo satinado, **completamente libre de vibraciones o parpadeos**.
+- Muestra el saldo de Puntos AGO y los canjes disponibles.
 
-### 5. Inventario Excel & Cierre con Puntos AGO (0:30 min)
-- Entra a **Inventario** (`/#/panel/inventario`): enséñale la matriz con heatmap por graduación y edita una celda con un doble clic. Presiona *"Exportar Todo a Excel"* para que vea cómo se descarga su archivo `.xlsx` listo para su proveedor.
-- Muestra el botón **"Avanzar +20 días"**: simula el paso del tiempo y ve a **Mensajes** (`/#/panel/mensajes`) para mostrarle cómo se redacta solo el WhatsApp de recordatorio de renovación con el saldo de Puntos AGO de la clienta.
-- **Frase de cierre:** *"Araceli, esto transforma tu negocio de contestar mensajes todo el día a tener una boutique digital automatizada que vende las 24 horas."*
-
----
-
-## 📂 Estructura del Proyecto
-
-```
-├── public/
-│   ├── logo-pupilentes-ago.png       # Logo oficial transparente alta resolución
-│   └── logo-pupilentes-ago-512.png   # Medallón circular 512px
-├── src/
-│   ├── components/
-│   │   └── common/
-│   │       ├── CustomCursor.jsx          # Cursor dorado boutique para escritorio
-│   │       ├── FloatingRoleSwitcher.jsx  # Selector flotante Clienta / Dueña
-│   │       ├── Footer.jsx                # Footer con mapa de entregas y legal
-│   │       ├── IrisRenderer.jsx          # Motor procedimental de iris en Canvas/SVG
-│   │       ├── Navbar.jsx                # Navegación responsive con medallón
-│   │       └── NotificationToast.jsx     # Alertas flotantes
-│   ├── data/
-│   │   ├── accesorios.js             # 6 accesorios y kits con reglas de descuento
-│   │   ├── afinidad.js               # Algoritmo de afinidad de 5 preguntas
-│   │   ├── ajustesIniciales.js       # Cuentas bancarias, estaciones y tarifas
-│   │   ├── clientas.js               # 35 clientas con niveles y renovaciones
-│   │   ├── pedidos.js                # 60 pedidos históricos en 60 días (5 canales)
-│   │   ├── plantillas.js             # Biblioteca de respuestas rápidas para WhatsApp
-│   │   └── productos.js              # 14 modelos en 5 familias con matriz 0.00 a -8.00
-│   ├── features/
-│   │   ├── eyelab/                   # Probador en vivo y cuestionario interactivo
-│   │   ├── panel/                    # Dashboard, Inventario Excel, Kanban, Catálogo, Clientas, Mensajes, Ajustes
-│   │   └── tienda/                   # Landing GSAP, Catálogo, Detalle OD/OI, Checkout 5 pasos, Tracking, Cuenta
-│   ├── store/
-│   │   └── useStore.js               # Store central Zustand con persistencia y sincronización
-│   ├── styles/
-│   │   └── index.css                 # Tokens Elegante Boutique y utilidades
-│   ├── App.jsx                       # Rutas HashRouter
-│   └── main.jsx                      # Entrada principal
-├── DECISIONES.md                     # Bitácora de decisiones técnicas y simulaciones
-└── package.json
-```
+### 5. Centro de Mando Operativo de Araceli (0:45 min)
+- En el selector inferior derecho, cambia a **"Dueña (Araceli)"** (`/#/panel`).
+- Muestra el pedido recién creado en el **Kanban** y el descuento automático de stock.
+- Entra a **Inventario**: muestra la matriz con heatmap y haz clic en *"Exportar Todo a Excel"* para descargar el archivo `.xlsx`.
+- En **Mensajes**, abre la plantilla de renovación y demuestra cómo se redacta el recordatorio de WhatsApp en un solo clic.
 
 ---
 

@@ -24,9 +24,9 @@ export const FloatingRoleSwitcher = () => {
   return (
     <aside 
       aria-label="Controles de demostración"
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 p-1.5 rounded-full bg-neutral-900/90 border border-amber-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_15px_rgba(201,162,75,0.25)] backdrop-blur-md transition-all duration-300"
+      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-50 flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-full bg-neutral-900/90 border border-amber-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_15px_rgba(201,162,75,0.25)] backdrop-blur-md transition-all duration-300"
     >
-      <div className="flex items-center text-[11px] font-semibold tracking-wider text-neutral-400 pl-3 pr-1 uppercase">
+      <div className="hidden sm:flex items-center text-[11px] font-semibold tracking-wider text-neutral-400 pl-3 pr-1 uppercase whitespace-nowrap">
         Ver como:
       </div>
 
@@ -55,7 +55,7 @@ export const FloatingRoleSwitcher = () => {
         title="Abrir el panel administrativo de Araceli"
       >
         <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-        <span>Dueña (Araceli)</span>
+        <span className="whitespace-nowrap"><span className="sm:hidden">Dueña</span><span className="hidden sm:inline">Dueña (Araceli)</span></span>
       </button>
 
       <div className="w-[1px] h-4 bg-neutral-700/60 mx-0.5" />

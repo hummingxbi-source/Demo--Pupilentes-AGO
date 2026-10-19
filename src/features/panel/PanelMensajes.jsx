@@ -49,7 +49,7 @@ export const PanelMensajes = () => {
   const copiarMensaje = () => {
     navigator.clipboard.writeText(textoGenerado);
     setCopiado(true);
-    showToast('Mensaje copiado al portapapeles 📋', 'success');
+    showToast('Mensaje copiado al portapapeles ', 'success');
     setTimeout(() => setCopiado(false), 2500);
   };
 

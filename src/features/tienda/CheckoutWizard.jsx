@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { IrisRenderer } from '../../components/common/IrisRenderer';
-import { formatMXN } from '../../data/productos';
+import { formatMXN, GRADUACIONES } from '../../data/productos';
 import { generarEnlaceWhatsApp } from '../../data/plantillas';
 import confetti from 'canvas-confetti';
 import {
@@ -20,11 +20,14 @@ import {
   Calendar,
   Clock,
   Printer,
+  Download,
   ExternalLink,
   MessageCircle,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
+import { generarTicketPDF } from '../../lib/generarTicketPDF';
 
 export const CheckoutWizard = () => {
   const navigate = useNavigate();
@@ -32,6 +35,7 @@ export const CheckoutWizard = () => {
   // Store Zustand
   const carrito = useStore((state) => state.carrito);
   const actualizarCantidad = useStore((state) => state.actualizarCantidadCarrito);
+  const actualizarItemCarrito = useStore((state) => state.actualizarItemCarrito);
   const eliminarItem = useStore((state) => state.eliminarDelCarrito);
   const cuponAplicado = useStore((state) => state.cuponAplicado);
   const aplicarCupon = useStore((state) => state.aplicarCupon);
@@ -42,6 +46,9 @@ export const CheckoutWizard = () => {
   const ajustes = useStore((state) => state.ajustes);
   const crearPedido = useStore((state) => state.crearPedido);
   const showToast = useStore((state) => state.showToast);
+
+  // Modal para ampliar Incluye Gratis
+  const [mostrarModalKit, setMostrarModalKit] = useState(false);
 
   // Paso actual (1: Carrito, 2: Entrega, 3: Datos Guía, 4: Pago, 5: Confirmado)
   const [paso, setPaso] = useState(1);
@@ -77,6 +84,7 @@ export const CheckoutWizard = () => {
   const [comprobanteImg, setComprobanteImg] = useState(null);
   const [bancoSeleccionado, setBancoSeleccionado] = useState('BBVA México');
   const [copiadoClabe, setCopiadoClabe] = useState(false);
+  const [comprobanteEnviadoPorWa, setComprobanteEnviadoPorWa] = useState(false);
 
   // Paso 5: Pedido Confirmado
   const [pedidoCreado, setPedidoCreado] = useState(null);
@@ -130,7 +138,7 @@ export const CheckoutWizard = () => {
   const copiarClabe = (clabe) => {
     navigator.clipboard.writeText(clabe);
     setCopiadoClabe(true);
-    showToast('CLABE copiada al portapapeles 📋', 'success');
+    showToast('CLABE copiada al portapapeles ', 'success');
     setTimeout(() => setCopiadoClabe(false), 3000);
   };
 
@@ -178,8 +186,10 @@ export const CheckoutWizard = () => {
       costoEnvio: costoEnvio,
       total: granTotal,
       bancoEmisor: bancoSeleccionado,
-      comprobanteUrl: comprobanteImg ? 'comprobante_subido_clienta.jpg' : null,
-      notas: `Pedido procesado desde la Tienda Online. Entrega: ${metodoEntrega}`
+      estado: 'verificar_comprobante',
+      comprobantePorWhatsApp: true,
+      comprobanteUrl: comprobanteImg ? 'comprobante_subido_clienta.jpg' : 'whatsapp_pendiente_revision',
+      notas: `Pedido online · Comprobante por WhatsApp · Entrega: ${metodoEntrega}`
     });
 
     setPedidoCreado(nuevoPedido);
@@ -197,23 +207,27 @@ export const CheckoutWizard = () => {
     }
   };
 
-  // Imprimir ticket o comprobante
+  // Imprimir ticket o comprobante en PDF
   const imprimirTicket = () => {
-    window.print();
+    if (pedidoCreado) {
+      generarTicketPDF(pedidoCreado);
+    } else {
+      window.print();
+    }
   };
 
   // Si el carrito está vacío y no estamos en confirmación
   if (carrito.length === 0 && paso !== 5) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 rounded-full bg-neutral-900 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-xl">
-          <ShoppingBag className="w-8 h-8" />
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center bg-ink text-champagne">
+        <div className="w-16 h-16 rounded-full bg-espresso border border-cocoa flex items-center justify-center text-sand mb-4 shadow-xl">
+          <ShoppingBag className="w-7 h-7" />
         </div>
-        <h2 className="font-serif text-3xl font-bold text-neutral-100 mb-2">Tu Carrito está Vacío</h2>
-        <p className="text-xs sm:text-sm text-stone-400 max-w-sm mb-6">
+        <h2 className="font-serif text-3xl font-light text-champagne mb-2">Tu bolsa está vacía</h2>
+        <p className="text-[14px] text-stone max-w-sm mb-6 font-light">
           Aún no has agregado ningún modelo de pupilentes o accesorio a tu orden.
         </p>
-        <Link to="/" className="btn-gold text-xs px-6 py-3">
+        <Link to="/" className="btn-brass text-xs px-6 py-3">
           Ver Catálogo y Elegir Modelo
         </Link>
       </div>
@@ -221,21 +235,24 @@ export const CheckoutWizard = () => {
   }
 
   return (
-    <div className="bg-neutral-950 text-neutral-100 py-10 min-h-screen">
-      <div className="container-custom max-w-5xl">
+    <div className="bg-ink text-champagne pt-24 pb-20 min-h-screen gutter">
+      <div className="w-full max-w-[1600px] mx-auto">
         {/* Barra de progreso de 5 pasos */}
         <div className="mb-10">
-          <div className="flex items-center justify-between text-xs font-semibold text-stone-400 mb-3 px-2">
-            <span className={paso >= 1 ? 'text-amber-300' : ''}>1. Carrito</span>
-            <span className={paso >= 2 ? 'text-amber-300' : ''}>2. Entrega</span>
-            <span className={paso >= 3 ? 'text-amber-300' : ''}>3. Datos</span>
-            <span className={paso >= 4 ? 'text-amber-300' : ''}>4. Pago</span>
-            <span className={paso >= 5 ? 'text-amber-300' : ''}>5. Listo</span>
+          {/* Móvil: paso actual legible; escritorio: los 5 pasos */}
+          <div className="sm:hidden flex items-baseline justify-between mb-3 px-1">
+            <span className="font-serif text-xl text-champagne">{['Tu bolsa', 'Entrega', 'Tus datos', 'Pago', 'Listo'][paso - 1]}</span>
+            <span className="text-[11px] uppercase tracking-[0.18em] text-stone">Paso {paso} de 5</span>
+          </div>
+          <div className="hidden sm:flex items-center justify-between text-[11px] uppercase tracking-[0.18em] font-medium text-stone mb-3 px-1">
+            {['Bolsa', 'Entrega', 'Datos', 'Pago', 'Listo'].map((l, i) => (
+              <span key={l} className={paso >= i + 1 ? 'text-sand' : ''}>{i + 1}. {l}</span>
+            ))}
           </div>
 
-          <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
+          <div className="w-full h-[2px] bg-cocoa overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-300 transition-all duration-500"
+              className="h-full bg-brass transition-all duration-500"
               style={{ width: `${(paso / 5) * 100}%` }}
             />
           </div>
@@ -247,7 +264,7 @@ export const CheckoutWizard = () => {
           <div className="lg:col-span-8">
             {/* PASO 1: CARRITO */}
             {paso === 1 && (
-              <div className="bg-neutral-900/90 border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="bg-espresso border border-cocoa rounded-[24px] p-6 sm:p-8 shadow-xl space-y-6">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
                   <h2 className="font-serif text-2xl font-bold text-amber-200">
                     Tu Carrito de Compra ({carrito.length} modelo(s))
@@ -258,57 +275,189 @@ export const CheckoutWizard = () => {
                 </div>
 
                 <div className="divide-y divide-neutral-800">
-                  {carrito.map((item) => (
-                    <div key={item.cartItemId} className="py-4 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <IrisRenderer
-                          colorPrincipal={item.hexPrincipal || "#D4A345"}
-                          colorSecundario={item.hexSecundario || "#8F641B"}
-                          size={54}
-                        />
-                        <div>
-                          <h4 className="text-sm font-bold text-neutral-100">{item.nombre}</h4>
-                          <span className="text-[11px] text-stone-400 block font-mono">
-                            OD: {item.od} | OI: {item.oi} ({item.tipoCompra})
-                          </span>
-                          <span className="text-xs font-bold text-amber-300 font-sans">
-                            {formatMXN(item.precioUnitario)}
-                          </span>
+                  {carrito.map((item) => {
+                    const esDiferente = item.od !== item.oi;
+
+                    return (
+                      <div key={item.cartItemId} className="py-5 space-y-3.5">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3.5">
+                            <IrisRenderer
+                              colorPrincipal={item.hexPrincipal || "#D4A345"}
+                              colorSecundario={item.hexSecundario || "#8F641B"}
+                              size={56}
+                            />
+                            <div>
+                              <h4 className="text-sm font-bold text-neutral-100">{item.nombre}</h4>
+                              <span className="text-[11px] text-stone-400 block font-mono">
+                                OD: {item.od || '0.00'} | OI: {item.oi || '0.00'} ({item.tipoCompra})
+                              </span>
+                              <span className="text-xs font-bold text-amber-300 font-sans">
+                                {formatMXN(item.precioUnitario)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {/* Selector de cantidad */}
+                            <div className="flex items-center border border-neutral-700 rounded-lg bg-neutral-950">
+                              <button
+                                type="button"
+                                onClick={() => actualizarCantidad(item.cartItemId, item.cantidad - 1)}
+                                className="px-2.5 py-1 text-xs text-stone-300 hover:text-white"
+                              >
+                                −
+                              </button>
+                              <span className="px-2 text-xs font-mono font-bold">{item.cantidad}</span>
+                              <button
+                                type="button"
+                                onClick={() => actualizarCantidad(item.cartItemId, item.cantidad + 1)}
+                                className="px-2.5 py-1 text-xs text-stone-300 hover:text-white"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Botón eliminar */}
+                            <button
+                              type="button"
+                              onClick={() => eliminarItem(item.cartItemId)}
+                              className="p-1.5 text-stone-500 hover:text-rose-400 transition-colors"
+                              title="Eliminar del carrito"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Configuración de Graduación: Mismo ojo vs Diferente por ojo */}
+                        <div className="p-3 rounded-xl bg-ink/70 border border-cocoa/70 space-y-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[11px] uppercase tracking-wider text-sand font-medium">
+                              Graduación Óptica:
+                            </span>
+
+                            {/* Toggle Mismo / Diferente */}
+                            <div className="flex items-center gap-1 bg-espresso p-0.5 rounded-lg border border-cocoa text-[11px]">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  actualizarItemCarrito(item.cartItemId, { oi: item.od || '0.00' });
+                                }}
+                                className={`px-2.5 py-0.5 rounded transition-all font-medium ${
+                                  !esDiferente ? 'bg-brass text-ink font-bold shadow-sm' : 'text-stone hover:text-champagne'
+                                }`}
+                              >
+                                Mismo para ambos ojos
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!esDiferente) {
+                                    actualizarItemCarrito(item.cartItemId, { oi: item.oi || '-1.00' });
+                                  }
+                                }}
+                                className={`px-2.5 py-0.5 rounded transition-all font-medium ${
+                                  esDiferente ? 'bg-brass text-ink font-bold shadow-sm' : 'text-stone hover:text-champagne'
+                                }`}
+                              >
+                                Diferente por ojo
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Selectores OD y OI */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                              <label className="text-[11px] text-stone block mb-1 font-medium">
+                                Ojo Derecho (OD):
+                              </label>
+                              <select
+                                value={item.od || '0.00'}
+                                onChange={(e) => {
+                                  const nuevoOd = e.target.value;
+                                  actualizarItemCarrito(item.cartItemId, {
+                                    od: nuevoOd,
+                                    oi: !esDiferente ? nuevoOd : item.oi
+                                  });
+                                }}
+                                className="w-full px-2.5 py-1.5 rounded-lg bg-espresso border border-cocoa text-champagne text-xs font-mono focus:border-brass focus:outline-none"
+                              >
+                                <option value="0.00">Sin graduación (estético) 0.00</option>
+                                {GRADUACIONES.filter((g) => g !== '0.00').map((grad) => (
+                                  <option key={`od-${grad}`} value={grad}>
+                                    {grad}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {esDiferente ? (
+                              <div>
+                                <label className="text-[11px] text-stone block mb-1 font-medium">
+                                  Ojo Izquierdo (OI):
+                                </label>
+                                <select
+                                  value={item.oi || '0.00'}
+                                  onChange={(e) => {
+                                    actualizarItemCarrito(item.cartItemId, { oi: e.target.value });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-espresso border border-cocoa text-champagne text-xs font-mono focus:border-brass focus:outline-none"
+                                >
+                                  <option value="0.00">Sin graduación (estético) 0.00</option>
+                                  {GRADUACIONES.filter((g) => g !== '0.00').map((grad) => (
+                                    <option key={`oi-${grad}`} value={grad}>
+                                      {grad}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-[11px] text-emerald-400/90 pt-3">
+                                <span> Ambos ojos graduados en {item.od === '0.00' ? 'Plano (Sin graduación)' : item.od}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      <div className="flex items-center gap-3">
-                        {/* Selector de cantidad */}
-                        <div className="flex items-center border border-neutral-700 rounded-lg bg-neutral-950">
-                          <button
-                            type="button"
-                            onClick={() => actualizarCantidad(item.cartItemId, item.cantidad - 1)}
-                            className="px-2.5 py-1 text-xs text-stone-300 hover:text-white"
-                          >
-                            −
-                          </button>
-                          <span className="px-2 text-xs font-mono font-bold">{item.cantidad}</span>
-                          <button
-                            type="button"
-                            onClick={() => actualizarCantidad(item.cartItemId, item.cantidad + 1)}
-                            className="px-2.5 py-1 text-xs text-stone-300 hover:text-white"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Botón eliminar */}
-                        <button
-                          type="button"
-                          onClick={() => eliminarItem(item.cartItemId)}
-                          className="p-1.5 text-stone-500 hover:text-rose-400 transition-colors"
-                          title="Eliminar del carrito"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                {/* Banner Oficial: ¡Tu Compra Incluye Sin Costo! (Imagen en proporción vertical 3:4 nítida) */}
+                <div className="p-5 rounded-2xl bg-espresso border border-cocoa flex flex-col sm:flex-row items-center gap-5 shadow-lg">
+                  <div
+                    onClick={() => setMostrarModalKit(true)}
+                    className="w-32 sm:w-40 aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-brass/40 shrink-0 flex items-center justify-center p-2 shadow-xl cursor-pointer group hover:border-brass hover:scale-[1.02] transition-all"
+                    title="Clic para ver en detalle"
+                  >
+                    <img
+                      src="/img/fotos/empaque/pupilentes-ago-incluye.png"
+                      alt="Kit oficial incluido Pupilentes AGO"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-md"
+                    />
+                  </div>
+                  <div className="space-y-2 text-center sm:text-left flex-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brass/20 text-gilt border border-brass/30">
+                         Incluido Gratis con tu Compra
+                      </span>
+                      <span className="text-xs text-emerald-400 font-semibold">$0 MXN</span>
                     </div>
-                  ))}
+                    <h5 className="font-serif text-lg text-champagne">
+                      Estuche Hermético R/L + Solución ReNu Fresh Bausch & Lomb (60ml)
+                    </h5>
+                    <p className="text-xs text-stone font-light leading-relaxed">
+                      Cada par de pupilentes incluye su kit estéril oficial completo listo para usar desde el primer instante.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarModalKit(true)}
+                      className="text-xs text-brass hover:text-champagne transition-colors underline decoration-brass/50 font-medium inline-block"
+                    >
+                      Ver accesorios en grande 
+                    </button>
+                  </div>
                 </div>
 
                 {/* Cupón y Canje de Puntos */}
@@ -320,7 +469,7 @@ export const CheckoutWizard = () => {
                     </span>
                     {cuponAplicado ? (
                       <div className="flex items-center justify-between text-xs text-emerald-400 bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
-                        <span>✓ Cupón {cuponAplicado.codigo} activo</span>
+                        <span> Cupón {cuponAplicado.codigo} activo</span>
                         <button onClick={removerCupon} className="text-stone-400 hover:text-white text-xs">
                           Quitar
                         </button>
@@ -377,7 +526,7 @@ export const CheckoutWizard = () => {
                   <button
                     type="button"
                     onClick={() => setPaso(2)}
-                    className="btn-gold text-xs px-8 py-3 flex items-center gap-2"
+                    className="btn-brass text-xs px-8 py-3 flex items-center gap-2"
                   >
                     <span>Continuar a Entrega</span>
                     <ArrowRight className="w-4 h-4" />
@@ -394,7 +543,7 @@ export const CheckoutWizard = () => {
                     Selecciona tu Método de Entrega
                   </h2>
                   <p className="text-xs text-stone-400">
-                    Exactamente como opera Araceli en CDMX y para todo México.
+                    Entregas personales y envíos seguros a toda la República.
                   </p>
                 </div>
 
@@ -419,8 +568,11 @@ export const CheckoutWizard = () => {
                         Pantitlán / Tepalcates: GRATIS ($0)
                       </span>
                     </div>
-                    <p className="text-xs text-stone-400 mb-3">
-                      Pacta día y hora para recoger tus pupilentes directamente con Araceli en torniquetes.
+                    <p className="text-xs text-stone-400 mb-1.5">
+                      Pacta día y hora para recoger tus pupilentes en torniquetes de Metro Pantitlán o Tepalcates.
+                    </p>
+                    <p className="text-[11px] text-stone-400 font-light mb-3">
+                       Horarios disponibles: {ajustes?.horariosEntrega?.find((h) => h.id === 'metro')?.horarios?.join(' · ') || '10:00–14:00 · 15:00–19:00'}
                     </p>
 
                     {metodoEntrega === 'entrega_personal' && (
@@ -470,11 +622,14 @@ export const CheckoutWizard = () => {
                         {formatMXN(didiCosto)} (Estimado)
                       </span>
                     </div>
-                    <p className="text-xs text-stone-400 mb-2">
+                    <p className="text-xs text-stone-400 mb-1.5">
                       Recibe en tu puerta en menos de 90 minutos.
                     </p>
+                    <p className="text-[11px] text-stone-400 font-light mb-2">
+                       Horarios disponibles: {ajustes?.horariosEntrega?.find((h) => h.id === 'didi')?.horarios?.join(' · ') || 'Cualquier hora con 2h de aviso'}
+                    </p>
                     <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300">
-                      ⚠️ <strong>Regla del negocio:</strong> El costo del DiDi y los pupilentes se pagan por transferencia antes de solicitar la unidad.
+                       <strong>Regla del negocio:</strong> El costo del DiDi y los pupilentes se pagan por transferencia antes de solicitar la unidad.
                     </div>
                   </div>
 
@@ -498,8 +653,11 @@ export const CheckoutWizard = () => {
                         {formatMXN(opcionPaqueteria.costo)}
                       </span>
                     </div>
-                    <p className="text-xs text-stone-400 mb-3">
+                    <p className="text-xs text-stone-400 mb-1.5">
                       Estafeta, FedEx o DHL con número de guía oficial y seguro de envío.
+                    </p>
+                    <p className="text-[11px] text-stone-400 font-light mb-3">
+                       Horarios disponibles: {ajustes?.horariosEntrega?.find((h) => h.id === 'paqueteria')?.horarios?.join(' · ') || 'Lunes a viernes, recolección antes de 13:00'}
                     </p>
 
                     {metodoEntrega === 'paqueteria' && (
@@ -577,7 +735,7 @@ export const CheckoutWizard = () => {
                   <button
                     type="button"
                     onClick={() => setPaso(3)}
-                    className="btn-gold text-xs px-8 py-3 flex items-center gap-2"
+                    className="btn-brass text-xs px-8 py-3 flex items-center gap-2"
                   >
                     <span>Continuar a Datos</span>
                     <ArrowRight className="w-4 h-4" />
@@ -588,9 +746,9 @@ export const CheckoutWizard = () => {
 
             {/* PASO 3: DATOS PARA LA GUÍA */}
             {paso === 3 && (
-              <div className="bg-neutral-900/90 border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="bg-espresso border border-cocoa rounded-[24px] p-6 sm:p-8 shadow-xl space-y-6">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-amber-200 mb-1">
+                  <h2 className="font-serif text-2xl font-light text-champagne mb-1">
                     Datos de Entrega y Contacto
                   </h2>
                   <p className="text-xs text-stone-400">
@@ -704,7 +862,7 @@ export const CheckoutWizard = () => {
                   <button
                     type="button"
                     onClick={() => setPaso(4)}
-                    className="btn-gold text-xs px-8 py-3 flex items-center gap-2"
+                    className="btn-brass text-xs px-8 py-3 flex items-center gap-2"
                   >
                     <span>Continuar a Pago</span>
                     <ArrowRight className="w-4 h-4" />
@@ -715,17 +873,17 @@ export const CheckoutWizard = () => {
 
             {/* PASO 4: PAGO Y COMPROBANTE */}
             {paso === 4 && (
-              <div className="bg-neutral-900/90 border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="bg-espresso border border-cocoa rounded-[24px] p-6 sm:p-8 shadow-xl space-y-6">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-amber-200 mb-1">
-                    Cuentas de Pago y Subida de Comprobante
+                  <h2 className="font-serif text-2xl font-light text-champagne mb-1">
+                    Cuentas de Pago y Envío de Comprobante
                   </h2>
                   <p className="text-xs text-stone-400">
-                    Realiza tu transferencia por el monto exacto y carga tu comprobante para validación inmediata.
+                    Realiza tu transferencia por el monto exacto y comparte tu comprobante por WhatsApp para su validación en menos de 24 horas.
                   </p>
                 </div>
 
-                {/* Cuentas bancarias configuradas de Araceli */}
+                {/* Cuentas bancarias configuradas */}
                 <div className="space-y-3">
                   {ajustes.cuentasPago.map((cuenta) => (
                     <div
@@ -764,44 +922,49 @@ export const CheckoutWizard = () => {
                   ))}
                 </div>
 
-                {/* Área de Carga de Comprobante */}
-                <div className="p-5 rounded-2xl bg-neutral-950 border border-dashed border-amber-500/40 text-center">
-                  {comprobanteImg ? (
-                    <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 rounded-lg overflow-hidden border border-emerald-400 mb-3 shadow-lg">
-                        <img src={comprobanteImg} alt="Comprobante cargado" className="w-full h-full object-cover" />
-                      </div>
-                      <span className="text-xs text-emerald-400 font-bold mb-1">
-                        ✓ Comprobante listo para verificación
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setComprobanteImg(null)}
-                        className="text-[11px] text-stone-400 hover:text-white underline"
-                      >
-                        Cambiar foto o archivo
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <Upload className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-                      <h4 className="text-xs font-bold text-neutral-200 mb-1">
-                        Sube una foto o captura de tu comprobante de pago
-                      </h4>
-                      <p className="text-[11px] text-stone-500 mb-3">
-                        Formatos JPG, PNG o PDF. Se almacenará de forma segura para validación.
-                      </p>
-                      <label className="btn-outline-gold text-xs py-2 px-4 cursor-pointer inline-flex items-center gap-1.5">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleSubirComprobante}
-                          className="hidden"
-                        />
-                        <span>Seleccionar Comprobante</span>
-                      </label>
-                    </div>
-                  )}
+                {/* Sección de Envío de Comprobante por WhatsApp */}
+                <div className="p-6 rounded-2xl bg-neutral-950 border border-brass/40 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-[#25D366]/20 border border-[#25D366]/40 flex items-center justify-center text-[#25D366] mx-auto shadow-md">
+                    <MessageCircle className="w-6 h-6 fill-current" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-champagne">
+                      Envío de Comprobante por WhatsApp
+                    </h4>
+                    <p className="text-xs text-stone-400 max-w-md mx-auto">
+                      Realiza tu transferencia SPEI y envíanos la captura de pantalla por WhatsApp para validar tu pago y apartar tu pedido.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+                    <a
+                      href={generarEnlaceWhatsApp(
+                        ajustes.telefonoWhatsApp,
+                        `¡Hola Pupilentes AGO! Les comparto el comprobante de mi orden por ${formatMXN(granTotal)}. Mi nombre es ${nombreRecibe} (Tel: ${telefonoRecibe}).`
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setComprobanteEnviadoPorWa(true)}
+                      className="btn-brass text-xs px-6 py-3 w-full sm:w-auto flex items-center justify-center gap-2 !bg-[#25D366] !text-black font-semibold shadow-lg hover:brightness-110"
+                    >
+                      <MessageCircle className="w-4 h-4 fill-current" />
+                      <span>Abrir WhatsApp y Enviar Comprobante</span>
+                    </a>
+                  </div>
+
+                  <label className="flex items-center justify-center gap-2 cursor-pointer pt-2 text-xs text-sand">
+                    <input
+                      type="checkbox"
+                      checked={comprobanteEnviadoPorWa}
+                      onChange={(e) => setComprobanteEnviadoPorWa(e.target.checked)}
+                      className="accent-brass rounded w-4 h-4"
+                    />
+                    <span>Confirmo que enviaré o ya envié mi comprobante por WhatsApp</span>
+                  </label>
+
+                  <div className="text-[11px] text-stone-500">
+                     Validación en menos de 24 horas garantizada por nuestro equipo.
+                  </div>
                 </div>
 
                 <div className="flex justify-between pt-4">
@@ -815,7 +978,7 @@ export const CheckoutWizard = () => {
                   <button
                     type="button"
                     onClick={finalizarCompra}
-                    className="btn-gold text-xs px-8 py-3.5 flex items-center gap-2 shadow-[0_0_20px_rgba(201,162,75,0.4)]"
+                    className="btn-brass text-xs px-8 py-3.5 flex items-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Confirmar y Finalizar Pedido</span>
@@ -824,11 +987,11 @@ export const CheckoutWizard = () => {
               </div>
             )}
 
-            {/* PASO 5: CONFIRMACIÓN Y GUÍA GENERADA */}
+            {/* PASO 5: CONFIRMACIÓN Y SALA DE ESPERA */}
             {paso === 5 && pedidoCreado && (
-              <div className="bg-neutral-900/90 border border-amber-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-center animate-fade-in">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-400 mx-auto shadow-[0_0_25px_rgba(111,174,139,0.4)]">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className="bg-espresso border border-cocoa rounded-[24px] p-6 sm:p-10 shadow-2xl space-y-6 text-center animate-fade-in">
+                <div className="w-16 h-16 rounded-full bg-brass/20 border border-brass/40 flex items-center justify-center text-champagne mx-auto">
+                  <CheckCircle2 className="w-8 h-8 stroke-[1.5]" />
                 </div>
 
                 <div>
@@ -838,8 +1001,11 @@ export const CheckoutWizard = () => {
                   <h2 className="font-serif text-3xl sm:text-4xl font-bold text-amber-100 mb-2">
                     Folio de Pedido: #{pedidoCreado.id}
                   </h2>
+                  <div className="inline-block px-4 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium mb-3">
+                    Pendiente de Validación · En menos de 24 hrs
+                  </div>
                   <p className="text-xs sm:text-sm text-stone-300 max-w-md mx-auto leading-relaxed">
-                    Hemos recibido los datos de tu orden y tu comprobante. Tu stock ha sido apartado y se ha notificado a Araceli en el panel.
+                    Hemos registrado tu orden y apartado tu stock. Recuerda enviar tu comprobante por WhatsApp para que nuestro equipo valide tu pago y prepare tu entrega.
                   </p>
                 </div>
 
@@ -854,6 +1020,10 @@ export const CheckoutWizard = () => {
                     <span className="text-white">{pedidoCreado.clientaNombre}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-stone-500">Teléfono:</span>
+                    <span className="text-white">{pedidoCreado.telefono}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-stone-500">Entrega:</span>
                     <span className="text-amber-300 capitalize">{pedidoCreado.metodoEntrega.replace('_', ' ')}</span>
                   </div>
@@ -864,7 +1034,7 @@ export const CheckoutWizard = () => {
                     </div>
                   )}
                   <div className="border-t border-neutral-800 pt-2 flex justify-between font-bold text-sm">
-                    <span className="text-white">TOTAL PAGADO:</span>
+                    <span className="text-white">TOTAL DE ORDEN:</span>
                     <span className="text-amber-300">{formatMXN(pedidoCreado.total)}</span>
                   </div>
                 </div>
@@ -874,32 +1044,32 @@ export const CheckoutWizard = () => {
                   <a
                     href={generarEnlaceWhatsApp(
                       ajustes.telefonoWhatsApp,
-                      `¡Hola Araceli! Acabo de realizar mi pedido #${pedidoCreado.id} por ${formatMXN(pedidoCreado.total)} en la tienda online. Aquí te confirmo mis datos.`
+                      `¡Hola Pupilentes AGO! Acabo de registrar mi pedido #${pedidoCreado.id} por ${formatMXN(pedidoCreado.total)} en la tienda online. Aquí les comparto mi comprobante de pago.`
                     )}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-gold text-xs px-6 py-3.5 w-full sm:w-auto flex items-center justify-center gap-2 bg-[#25D366] text-black font-bold shadow-lg"
+                    className="btn-brass text-xs px-6 py-3.5 w-full sm:w-auto flex items-center justify-center gap-2 !bg-[#25D366] !text-black font-semibold shadow-lg"
                   >
                     <MessageCircle className="w-4 h-4 fill-current" />
-                    <span>Enviar mi Pedido por WhatsApp</span>
+                    <span>Enviar Comprobante por WhatsApp</span>
                   </a>
 
                   <button
                     type="button"
                     onClick={imprimirTicket}
-                    className="btn-outline-gold text-xs px-5 py-3 w-full sm:w-auto flex items-center justify-center gap-2"
+                    className="btn-brass text-xs px-5 py-3 w-full sm:w-auto flex items-center justify-center gap-2 border border-brass/40 shadow-sm"
                   >
-                    <Printer className="w-4 h-4" />
-                    <span>Descargar Ticket / PDF</span>
+                    <Download className="w-4 h-4" />
+                    <span>Descargar Ticket Boutique PDF</span>
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-neutral-800 flex items-center justify-center gap-4 text-xs">
+                <div className="pt-4 border-t border-cocoa flex items-center justify-center gap-4 text-xs">
                   <Link
-                    to={`/seguimiento/${pedidoCreado.id}`}
-                    className="text-amber-400 hover:underline flex items-center gap-1 font-medium"
+                    to={`/cuenta`}
+                    className="btn-link-thread text-sand hover:text-gilt flex items-center gap-1 font-medium"
                   >
-                    <span>Ver Rastreo en Vivo de mi Orden</span>
+                    <span>Ir a Mi Pedido & Puntos (Consultar Estatus)</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -908,15 +1078,15 @@ export const CheckoutWizard = () => {
           </div>
 
           {/* COLUMNA LATERAL: RESUMEN DE COMPRA */}
-          <div className="lg:col-span-4 bg-neutral-900/80 border border-neutral-800 rounded-2xl p-6 shadow-xl sticky top-28 space-y-4">
-            <h3 className="font-serif text-lg font-bold text-amber-200 border-b border-neutral-800 pb-3">
+          <div className="lg:col-span-4 bg-espresso border border-cocoa rounded-[24px] p-6 sm:p-7 shadow-xl sticky top-28 space-y-4">
+            <h3 className="font-serif text-xl font-light text-champagne border-b border-cocoa pb-3">
               Resumen del Pedido
             </h3>
 
             <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between text-stone-300">
+              <div className="flex justify-between text-stone">
                 <span>Subtotal ({carrito.length} productos):</span>
-                <span className="font-mono">{formatMXN(subtotalProductos)}</span>
+                <span className="font-mono text-champagne">{formatMXN(subtotalProductos)}</span>
               </div>
 
               {montoDescuentoCupon > 0 && (
@@ -927,40 +1097,83 @@ export const CheckoutWizard = () => {
               )}
 
               {descuentoPuntos > 0 && (
-                <div className="flex justify-between text-amber-400">
+                <div className="flex justify-between text-sand">
                   <span>Canje de Puntos AGO:</span>
                   <span className="font-mono">-{formatMXN(descuentoPuntos)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between text-stone-300">
+              <div className="flex justify-between text-stone">
                 <span>Costo de envío:</span>
-                <span className="font-mono">
-                  {costoEnvio === 0 ? "GRATIS ($0.00)" : formatMXN(costoEnvio)}
+                <span className="font-mono text-champagne">
+                  {costoEnvio === 0 ? 'GRATIS ($0.00)' : formatMXN(costoEnvio)}
                 </span>
               </div>
 
-              <div className="border-t border-neutral-800 pt-3 flex justify-between items-baseline">
-                <span className="text-sm font-bold text-white">Total:</span>
-                <span className="text-xl font-bold text-amber-300 font-sans">
+              <div className="border-t border-cocoa pt-3 flex justify-between items-baseline">
+                <span className="text-sm font-medium text-champagne">Total:</span>
+                <span className="text-2xl font-serif font-light text-champagne">
                   {formatMXN(granTotal)}
                 </span>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-neutral-800 text-[11px] text-stone-400 space-y-2">
+            <div className="pt-3 border-t border-cocoa text-[11px] text-stone space-y-2">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-brass" />
                 <span>Garantía de esterilidad y empaque sellado</span>
               </div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <Sparkles className="w-4 h-4 text-brass" />
                 <span>Acumulas +{Math.floor(granTotal / 10)} Puntos AGO</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal / Popover Kit Incluido Gratis */}
+      {mostrarModalKit && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setMostrarModalKit(false)}
+        >
+          <div
+            className="bg-neutral-900 border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl relative text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setMostrarModalKit(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-white text-lg font-bold"
+            >
+              
+            </button>
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30 mb-3">
+               Incluido Gratis con tu Compra
+            </span>
+            <h4 className="font-serif text-xl font-bold text-amber-200 mb-2">
+              Kit Oficial de Cuidado y Esterilidad
+            </h4>
+            <div className="w-full max-w-xs sm:max-w-sm aspect-[3/4] mx-auto my-3 bg-black rounded-2xl border border-brass/40 flex items-center justify-center p-3 shadow-inner">
+              <img
+                src="/img/fotos/empaque/pupilentes-ago-incluye.png"
+                alt="Kit incluido gratis Pupilentes AGO"
+                className="w-full h-full object-contain drop-shadow-xl"
+              />
+            </div>
+            <p className="text-xs text-stone-300 leading-relaxed mb-4">
+              Incluye estuche hermético con sellado R/L de grado médico y solución limpiadora/humectante ReNu Fresh de Bausch & Lomb (60ml).
+            </p>
+            <button
+              onClick={() => setMostrarModalKit(false)}
+              className="w-full py-2.5 rounded-xl bg-amber-400 text-neutral-950 font-bold text-xs uppercase tracking-wider hover:bg-amber-300 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

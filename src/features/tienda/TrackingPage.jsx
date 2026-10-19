@@ -2,45 +2,43 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { formatMXN } from '../../data/productos';
-import { CheckCircle2, Clock, Truck, Package, MapPin, ArrowLeft, MessageCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Truck, ArrowLeft, Package, CreditCard, FileText } from 'lucide-react';
 
 export const TrackingPage = () => {
   const { id } = useParams();
   const pedidos = useStore((state) => state.pedidos);
-  const ajustes = useStore((state) => state.ajustes);
 
   const pedido = pedidos.find((p) => p.id === id) || pedidos[0];
 
   if (!pedido) {
     return (
-      <div className="container-custom py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Pedido no encontrado</h2>
-        <Link to="/" className="btn-gold text-xs px-6 py-2">Volver al inicio</Link>
+      <div className="gutter py-24 text-center bg-ink text-champagne min-h-screen">
+        <h2 className="font-serif text-3xl font-light mb-4">Pedido no encontrado</h2>
+        <Link to="/" className="btn-brass">Volver al inicio</Link>
       </div>
     );
   }
 
-  // Mapeo del estado Kanban a pasos del timeline
   const estadosOrden = [
-    { id: "esperando_pago", label: "Pedido Recibido", desc: "Datos de orden registrados" },
-    { id: "verificar_comprobante", label: "Comprobante en Revisión", desc: "Validando transferencia bancaria" },
-    { id: "generar_guia", label: "Pago Verificado & Empaque", desc: "Preparando lentes en taller boutique" },
-    { id: "en_camino", label: "En Camino / Por Entregar", desc: "Paquetería o cita en Metro agendada" },
-    { id: "entregado", label: "Entregado", desc: "Pedido completado con éxito" }
+    { id: 'esperando_pago', label: 'Pedido recibido', desc: 'Registrado en sistema' },
+    { id: 'verificar_comprobante', label: 'Comprobante', desc: 'Validación SPEI' },
+    { id: 'generar_guia', label: 'En taller', desc: 'Empaque y verificación OD/OI' },
+    { id: 'en_camino', label: 'En camino', desc: 'Paquetería o cita en Metro agendada' },
+    { id: 'entregado', label: 'Entregado', desc: 'Completado con éxito' },
   ];
 
   const getPasoIndice = (estado) => {
     switch (estado) {
-      case "cotizando":
-      case "esperando_pago":
+      case 'cotizando':
+      case 'esperando_pago':
         return 0;
-      case "verificar_comprobante":
+      case 'verificar_comprobante':
         return 1;
-      case "generar_guia":
+      case 'generar_guia':
         return 2;
-      case "en_camino":
+      case 'en_camino':
         return 3;
-      case "entregado":
+      case 'entregado':
         return 4;
       default:
         return 1;
@@ -50,57 +48,84 @@ export const TrackingPage = () => {
   const pasoActual = getPasoIndice(pedido.estado);
 
   return (
-    <div className="bg-neutral-950 text-neutral-100 py-12 min-h-screen">
-      <div className="container-custom max-w-4xl">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs text-stone-400 hover:text-amber-300 mb-6">
-          <ArrowLeft className="w-4 h-4" />
+    <div className="bg-ink text-champagne pt-24 pb-20 min-h-screen gutter">
+      <div className="w-full max-w-[1400px] mx-auto space-y-12">
+        <Link
+          to="/"
+          className="btn-link-thread text-[12px] uppercase tracking-[0.16em] inline-flex items-center gap-2"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
           <span>Volver a la Tienda</span>
         </Link>
 
-        <div className="bg-neutral-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
-          {/* Cabecera del Tracking */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-6">
+        <div className="bg-espresso border border-cocoa rounded-[28px] p-8 sm:p-12 shadow-2xl space-y-10">
+          {/* Cabecera */}
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-cocoa pb-8">
             <div>
-              <span className="text-xs uppercase font-mono tracking-widest text-amber-400 block mb-1">
+              <span className="text-[11px] uppercase tracking-[0.24em] text-sand font-medium block mb-2">
                 Seguimiento en Vivo
               </span>
-              <h1 className="font-serif text-3xl font-bold text-amber-100">
-                Orden #{pedido.id}
+              <h1 className="font-serif text-[clamp(2.5rem,4vw,3.5rem)] text-champagne font-light leading-tight">
+                Orden <span className="whitespace-nowrap">#{pedido.id}</span>
               </h1>
-              <span className="text-xs text-stone-400">
-                Fecha: {pedido.fecha} · Cliente: <strong>{pedido.clientaNombre}</strong>
+              <span className="text-[13px] text-stone font-light">
+                Fecha: {pedido.fecha} · Cliente: {pedido.clientaNombre}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="px-3.5 py-1.5 rounded-full text-xs font-bold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                {pedido.estado.replace('_', ' ')}
-              </span>
-            </div>
+            <span className="px-4 py-1.5 rounded-full text-[11px] uppercase tracking-[0.2em] font-medium bg-ink border border-brass/40 text-sand">
+              {pedido.estado.replace('_', ' ')}
+            </span>
           </div>
 
-          {/* Timeline animado conectado al Kanban */}
-          <div className="py-6">
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 relative">
-              {estadosOrden.map((est, idx) => {
-                const completado = idx <= pasoActual;
+          {/* Timeline visual con camioncito activo */}
+          <div className="py-6 relative">
+            {/* Barra horizontal base */}
+            <div className="absolute top-11 left-8 right-8 h-1 bg-cocoa/80 rounded-full hidden sm:block">
+              <div
+                className="h-full bg-gradient-to-r from-brass via-gilt to-brass rounded-full transition-all duration-700 shadow-[0_0_12px_rgba(217,190,133,0.5)]"
+                style={{ width: `${(pasoActual / 4) * 100}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-6 relative z-10">
+              {[
+                { id: 'esperando_pago', label: '1. Pedido recibido', desc: 'Registrado en sistema', icon: FileText },
+                { id: 'verificar_comprobante', label: '2. Pago Validado', desc: 'Comprobante aprobado', icon: CreditCard },
+                { id: 'generar_guia', label: '3. Preparando', desc: 'Empaque estéril boutique', icon: Package },
+                { id: 'en_camino', label: '4. En camino', desc: 'En ruta de entrega', icon: Truck },
+                { id: 'entregado', label: '5. Entregado', desc: 'Completado con éxito', icon: CheckCircle2 },
+              ].map((est, idx) => {
+                const completado = idx < pasoActual;
                 const esActual = idx === pasoActual;
+                const IconComponent = est.icon;
 
                 return (
-                  <div key={est.id} className="flex flex-col items-center text-center relative z-10">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs mb-3 transition-all duration-300 ${
-                        completado
-                          ? 'bg-amber-400 text-neutral-950 shadow-[0_0_15px_rgba(201,162,75,0.6)]'
-                          : 'bg-neutral-800 text-stone-500 border border-neutral-700'
-                      } ${esActual ? 'ring-4 ring-amber-400/30 scale-110' : ''}`}
-                    >
-                      {completado ? <CheckCircle2 className="w-5 h-5 stroke-[2.5]" /> : idx + 1}
+                  <div key={est.id} className="flex flex-col items-center text-center">
+                    <div className="relative mb-3">
+                      {esActual && idx === 3 ? (
+                        <div className="w-12 h-12 rounded-2xl bg-brass text-ink flex items-center justify-center shadow-[0_0_24px_rgba(217,190,133,0.8)] animate-pulse ring-4 ring-brass/25">
+                          <Truck className="w-6 h-6 stroke-[2.2]" />
+                        </div>
+                      ) : esActual ? (
+                        <div className="w-11 h-11 rounded-2xl bg-brass text-ink flex items-center justify-center shadow-[0_0_18px_rgba(217,190,133,0.6)] ring-2 ring-brass/40">
+                          <IconComponent className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                      ) : completado ? (
+                        <div className="w-10 h-10 rounded-2xl bg-espresso border border-brass/60 text-gilt flex items-center justify-center shadow-md">
+                          <CheckCircle2 className="w-5 h-5 text-brass" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-2xl bg-ink border border-cocoa text-stone flex items-center justify-center">
+                          <IconComponent className="w-4 h-4 opacity-50" />
+                        </div>
+                      )}
                     </div>
-                    <span className={`text-xs font-bold block mb-1 ${completado ? 'text-amber-200' : 'text-stone-500'}`}>
+
+                    <span className={`text-[12px] font-serif font-medium block mb-0.5 ${esActual ? 'text-gilt font-bold' : completado ? 'text-champagne' : 'text-stone'}`}>
                       {est.label}
                     </span>
-                    <span className="text-[10px] text-stone-400 leading-tight">
+                    <span className="text-[10px] text-stone/70 leading-tight">
                       {est.desc}
                     </span>
                   </div>
@@ -110,67 +135,43 @@ export const TrackingPage = () => {
           </div>
 
           {/* Detalles del Envío y Productos */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-neutral-800 text-xs">
-            {/* Detalles de Entrega */}
-            <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
-              <h4 className="font-bold text-amber-300 flex items-center gap-2">
-                <Truck className="w-4 h-4" />
-                Método de Entrega
-              </h4>
-              <p className="text-stone-300 capitalize">
-                <strong>Tipo:</strong> {pedido.metodoEntrega.replace('_', ' ')}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-cocoa text-[13px]">
+            <div className="p-5 rounded-2xl bg-ink border border-cocoa/80 space-y-2">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-sand font-medium flex items-center gap-2">
+                <Truck className="w-3.5 h-3.5 text-brass" />
+                Entrega
+              </span>
+              <p className="text-stone capitalize">
+                <strong>Método:</strong> {pedido.metodoEntrega.replace('_', ' ')}
               </p>
               {pedido.estacionMetro && (
-                <p className="text-stone-300">
+                <p className="text-stone">
                   <strong>Punto de encuentro:</strong> {pedido.estacionMetro}
                 </p>
               )}
               {pedido.guiaNumero && (
-                <p className="text-emerald-300 font-mono">
-                  <strong>Guía de Paquetería:</strong> {pedido.guiaNumero} ({pedido.paqueteriaNombre})
-                </p>
-              )}
-              {pedido.horarioPactado && (
-                <p className="text-stone-300">
-                  <strong>Horario:</strong> {pedido.horarioPactado}
+                <p className="text-sand font-mono">
+                  <strong>Guía:</strong> {pedido.guiaNumero} ({pedido.paqueteriaNombre})
                 </p>
               )}
             </div>
 
-            {/* Total e Items */}
-            <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
-              <h4 className="font-bold text-amber-300 flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Artículos en la Orden
-              </h4>
-              <ul className="space-y-1 text-stone-300">
-                {pedido.items.map((it, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span>{it.nombre} (OD: {it.od} / OI: {it.oi}) × {it.cantidad}</span>
-                    <span className="font-mono text-amber-200">{formatMXN(it.precioUnitario)}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-neutral-800 pt-2 flex justify-between font-bold text-sm text-white">
-                <span>Total pagado:</span>
-                <span className="text-amber-300">{formatMXN(pedido.total)}</span>
-              </div>
+            <div className="p-5 rounded-2xl bg-ink border border-cocoa/80 space-y-2">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-sand font-medium block">
+                Resumen de orden
+              </span>
+              <p className="text-stone">
+                {pedido.items.map((i) => `${i.nombre} (x${i.cantidad})`).join(', ')}
+              </p>
+              <p className="text-sand font-serif text-xl font-light pt-1">
+                Total: {formatMXN(pedido.total)}
+              </p>
             </div>
-          </div>
-
-          <div className="text-center pt-4">
-            <a
-              href={`https://wa.me/525571113508?text=Hola%20Araceli,%20tengo%20una%20duda%20sobre%20mi%20pedido%20%23${pedido.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-outline-gold text-xs py-2.5 px-6 inline-flex items-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span>Contactar a Araceli por WhatsApp</span>
-            </a>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default TrackingPage;

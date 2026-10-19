@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 *.timestamp-*
+
+# Original image drop folder
+public/img/originales/
