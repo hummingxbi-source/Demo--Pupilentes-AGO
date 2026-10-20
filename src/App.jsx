@@ -1,135 +1,65 @@
-import React, { Suspense, lazy } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { Navbar } from './components/common/Navbar';
-import { Footer } from './components/common/Footer';
-import { CustomCursor } from './components/common/CustomCursor';
-import { NotificationToast } from './components/common/NotificationToast';
-import { FloatingRoleSwitcher } from './components/common/FloatingRoleSwitcher';
-import { SmoothScrollProvider } from './lib/smoothScroll';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+import { Nav, Footer, Bag, Toast, WaFab, Curtain, TLink } from './ui';
+import Landing from './pages/Landing';
 
-// Landing page cargada de inmediato (critical path para First Contentful Paint)
-import { LandingPage } from './features/tienda/LandingPage';
+gsap.registerPlugin(ScrollTrigger);
+const Tienda = lazy(() => import('./pages/Tienda'));
+const Tono = lazy(() => import('./pages/Tono'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Pedido = lazy(() => import('./pages/Pedido'));
+const Cuenta = lazy(() => import('./pages/Cuenta'));
+const Nosotros = lazy(() => import('./pages/Nosotros'));
+const Probador = lazy(() => import('./pages/Probador'));
+const Panel = lazy(() => import('./panel/Panel'));
 
-// Rutas de tienda lazy loaded
-const ProductDetailPage = lazy(() =>
-  import('./features/tienda/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage || m.default }))
-);
-const EyeLabPage = lazy(() =>
-  import('./features/eyelab/EyeLabPage').then((m) => ({ default: m.EyeLabPage || m.default }))
-);
-const CheckoutWizard = lazy(() =>
-  import('./features/tienda/CheckoutWizard').then((m) => ({ default: m.CheckoutWizard || m.default }))
-);
-const TrackingPage = lazy(() =>
-  import('./features/tienda/TrackingPage').then((m) => ({ default: m.TrackingPage || m.default }))
-);
-const CuentaPage = lazy(() =>
-  import('./features/tienda/CuentaPage').then((m) => ({ default: m.CuentaPage || m.default }))
-);
-const CatalogoPage = lazy(() =>
-  import('./features/tienda/CatalogoPage').then((m) => ({ default: m.CatalogoPage || m.default }))
-);
-const PhoneFrame = lazy(() =>
-  import('./components/common/PhoneFrame').then((m) => ({ default: m.PhoneFrame || m.default }))
-);
+function Smooth() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (pathname.startsWith('/panel') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const lenis = new Lenis({ lerp: 0.11, smoothWheel: true });
+    window.__lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick); gsap.ticker.lagSmoothing(0);
+    return () => { gsap.ticker.remove(tick); lenis.destroy(); window.__lenis = null; };
+  }, [pathname]);
+  return null;
+}
 
-// Panel de Araceli lazy loaded (para no incluir xlsx, jspdf, recharts en la landing)
-const PanelLayout = lazy(() =>
-  import('./features/panel/PanelLayout').then((m) => ({ default: m.PanelLayout || m.default }))
-);
-const PanelDashboard = lazy(() =>
-  import('./features/panel/PanelDashboard').then((m) => ({ default: m.PanelDashboard || m.default }))
-);
-const PanelInventario = lazy(() =>
-  import('./features/panel/PanelInventario').then((m) => ({ default: m.PanelInventario || m.default }))
-);
-const PanelPedidos = lazy(() =>
-  import('./features/panel/PanelPedidos').then((m) => ({ default: m.PanelPedidos || m.default }))
-);
-const PanelCatalogo = lazy(() =>
-  import('./features/panel/PanelCatalogo').then((m) => ({ default: m.PanelCatalogo || m.default }))
-);
-const PanelClientas = lazy(() =>
-  import('./features/panel/PanelClientas').then((m) => ({ default: m.PanelClientas || m.default }))
-);
-const PanelMensajes = lazy(() =>
-  import('./features/panel/PanelMensajes').then((m) => ({ default: m.PanelMensajes || m.default }))
-);
-const PanelAjustes = lazy(() =>
-  import('./features/panel/PanelAjustes').then((m) => ({ default: m.PanelAjustes || m.default }))
-);
+function DemoPill() {
+  const [on, setOn] = useState(false);
+  useEffect(() => { const f = () => setOn(scrollY > innerHeight * 0.9); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f); }, []);
+  return <div className={on ? '' : 'pre-scroll'}><WaFab /><div className="demo-pill">Demo <TLink to="/panel">Ver panel de la dueña →</TLink></div></div>;
+}
 
-// Fallback visual minimalista Quiet Luxury
-const RouteLoading = () => (
-  <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-ink text-sand">
-    <div className="relative w-10 h-10 flex items-center justify-center">
-      <div className="absolute inset-0 rounded-full border border-brass/20 animate-ping opacity-75" />
-      <div className="w-6 h-6 rounded-full border-2 border-brass/40 border-t-brass animate-spin" />
-    </div>
-    <span className="text-[11px] font-sans uppercase tracking-[0.25em] text-stone">
-      Cargando experiencia
-    </span>
-  </div>
-);
+function Shop({ children, dark, bare }) {
+  return (<><Nav dark={dark} />{children}{!bare && <Footer />}<Bag />{!bare && <DemoPill />}</>);
+}
 
-// Layout condicional para ocultar Navbar y Footer de la tienda en el Panel administrativo o modo embed
-const MainLayout = ({ children }) => {
-  const location = useLocation();
-  const esPanel = location.pathname.startsWith('/panel');
-  const esMovil = location.pathname === '/movil';
-  const esEmbed =
-    location.search.includes('embed=1') || window.location.hash.includes('embed=1');
-
-  return (
-    <SmoothScrollProvider>
-      <div className="min-h-screen flex flex-col bg-ink text-champagne selection:bg-brass selection:text-ink">
-        {!esEmbed && !esMovil && <CustomCursor />}
-        <NotificationToast />
-        {!esPanel && !esEmbed && !esMovil && <Navbar />}
-        <main className="flex-1">{children}</main>
-        {!esPanel && !esEmbed && !esMovil && <Footer />}
-        {!esEmbed && !esMovil && <FloatingRoleSwitcher />}
-      </div>
-    </SmoothScrollProvider>
-  );
-};
-
-export function App() {
+export default function App() {
   return (
     <HashRouter>
-      <MainLayout>
-        <Suspense fallback={<RouteLoading />}>
-          <Routes>
-            {/* Rutas de la Tienda de la Clienta */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/catalogo" element={<CatalogoPage />} />
-            <Route path="/producto/:id" element={<ProductDetailPage />} />
-            <Route path="/probador" element={<EyeLabPage />} />
-            <Route path="/eyelab" element={<EyeLabPage />} />
-            <Route path="/checkout" element={<CheckoutWizard />} />
-            <Route path="/carrito" element={<CheckoutWizard />} />
-            <Route path="/cuenta" element={<CuentaPage />} />
-            <Route path="/seguimiento/:id" element={<TrackingPage />} />
-            <Route path="/movil" element={<PhoneFrame />} />
-
-            {/* Rutas del Panel de Araceli */}
-            <Route path="/panel" element={<PanelLayout />}>
-              <Route index element={<PanelDashboard />} />
-              <Route path="inventario" element={<PanelInventario />} />
-              <Route path="pedidos" element={<PanelPedidos />} />
-              <Route path="catalogo" element={<PanelCatalogo />} />
-              <Route path="clientas" element={<PanelClientas />} />
-              <Route path="mensajes" element={<PanelMensajes />} />
-              <Route path="ajustes" element={<PanelAjustes />} />
-            </Route>
-
-            {/* Ruta fallback a inicio */}
-            <Route path="*" element={<LandingPage />} />
-          </Routes>
-        </Suspense>
-      </MainLayout>
+      <Smooth />
+      <Curtain />
+      <Suspense fallback={<div style={{ minHeight: '100svh' }} />}>
+        <Routes>
+          <Route path="/" element={<Shop><Landing /></Shop>} />
+          <Route path="/nosotros" element={<Shop dark><Nosotros /></Shop>} />
+          <Route path="/tienda" element={<Shop><Tienda /></Shop>} />
+          <Route path="/tono" element={<Shop dark bare><Tono /></Shop>} />
+          <Route path="/probador" element={<Shop><Probador /></Shop>} />
+          <Route path="/cuenta" element={<Shop><Cuenta /></Shop>} />
+          <Route path="/pedido/:folio?" element={<Shop><Pedido /></Shop>} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/panel/*" element={<Panel />} />
+        </Routes>
+      </Suspense>
+      <Toast />
     </HashRouter>
   );
 }
-
-export default App;
